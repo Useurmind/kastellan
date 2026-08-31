@@ -1,0 +1,17 @@
+default_model: qwen3-coder-next
+
+agents:
+  local-agent:
+    harness_command:
+      - opencode
+    containerfile: ./Containerfile
+    # sync_approach: git_patch
+    mounts:
+      # for opencode you must provide all folders including the database folder
+      # while agent is running it is chowned to the podman user, later it is chowned back to you
+      - source: ~/.config/opencode
+        destination: /home/agent/.config/opencode
+      - source: ~/.local/state/opencode
+        destination: /home/agent/.local/state/opencode
+      - source: ~/.local/share/opencode
+        destination: /home/agent/.local/share/opencode
