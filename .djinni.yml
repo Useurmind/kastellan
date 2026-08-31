@@ -1,7 +1,7 @@
 default_model: qwen3-coder-next
 
 agents:
-  local-agent:
+  default:
     harness_command:
       - opencode
     containerfile: ./Containerfile
