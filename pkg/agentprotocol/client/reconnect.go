@@ -114,7 +114,6 @@ func (r *Reconnector) IncrementRetry() {
 
 // ReconnectLoop runs the reconnection loop.
 func (r *Reconnector) ReconnectLoop(ctx context.Context, connectFunc func(context.Context) error) error {
-	delay := r.initialDelay
 
 	for {
 		select {

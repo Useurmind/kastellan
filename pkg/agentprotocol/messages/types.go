@@ -2,6 +2,7 @@
 package messages
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -346,6 +347,11 @@ type ProtocolError struct {
 	Message string `json:"message"`
 }
 
+// Error returns the error message.
+func (e *ProtocolError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
 // Validate performs basic validation on AgentHello.
 func (a *AgentHello) Validate() error {
 	if a.Agent.ID == "" {
@@ -389,6 +395,170 @@ func (r *ReconciliationResult) Validate() error {
 	}
 	if r.Host == "" {
 		return &ProtocolError{Code: "missing_host", Message: "host name is required"}
+	}
+	return nil
+}
+
+// ReconcileRequest is sent by the operator to request reconciliation.
+type ReconcileRequest struct {
+	Type MessageType `json:"type"`
+
+	// Session ID
+	SessionID string `json:"sessionId"`
+
+	// Host name
+	Host string `json:"host"`
+
+	// Revision number
+	Revision int64 `json:"revision"`
+
+	// Timestamp of the message
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// CertificateRotationResponse is sent by the operator in response to certificate rotation request.
+type CertificateRotationResponse struct {
+	Type MessageType `json:"type"`
+
+	// Session ID
+	SessionID string `json:"sessionId"`
+
+	// Success indicates if rotation was successful
+	Success bool `json:"success"`
+
+	// Error message if rotation failed
+	Error string `json:"error,omitempty"`
+
+	// New certificate and key
+	Identity struct {
+		Certificate string `json:"certificate,omitempty"`
+		PrivateKey  string `json:"privateKey,omitempty"`
+		CABundle    string `json:"caBundle,omitempty"`
+	} `json:"identity,omitempty"`
+
+	// Timestamp of the message
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// ConnectionClose is sent by the operator to close the connection.
+type ConnectionClose struct {
+	Type MessageType `json:"type"`
+
+	// Session ID
+	SessionID string `json:"sessionId"`
+
+	// Reason for closing
+	Reason string `json:"reason,omitempty"`
+
+	// Timestamp of the message
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// Validate performs basic validation on ReconcileRequest.
+func (r *ReconcileRequest) Validate() error {
+	if r.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	if r.Host == "" {
+		return &ProtocolError{Code: "missing_host", Message: "host name is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on CertificateRotationResponse.
+func (c *CertificateRotationResponse) Validate() error {
+	if c.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on ConnectionClose.
+func (c *ConnectionClose) Validate() error {
+	if c.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on OperatorHello.
+func (o *OperatorHello) Validate() error {
+	if o.Session.ID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	if o.ProtocolVersion == "" {
+		return &ProtocolError{Code: "missing_protocol_version", Message: "protocol version is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on EnrollmentResponse.
+func (e *EnrollmentResponse) Validate() error {
+	if e.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on HostInventory.
+func (h *HostInventory) Validate() error {
+	if h.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	if h.Host.Name == "" {
+		return &ProtocolError{Code: "missing_host_name", Message: "host name is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on WorkloadStatus.
+func (w *WorkloadStatus) Validate() error {
+	if w.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	if w.UID == "" {
+		return &ProtocolError{Code: "missing_uid", Message: "workload UID is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on CertificateRotationRequest.
+func (c *CertificateRotationRequest) Validate() error {
+	if c.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on DesiredState.
+func (d *DesiredState) Validate() error {
+	if d.Host == "" {
+		return &ProtocolError{Code: "missing_host", Message: "host name is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on DesiredStateUpdate.
+func (d *DesiredStateUpdate) Validate() error {
+	if d.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	if d.Host == "" {
+		return &ProtocolError{Code: "missing_host", Message: "host name is required"}
+	}
+	return nil
+}
+
+// Validate performs basic validation on PodmanPlay.
+func (p *PodmanPlay) Validate() error {
+	if p.UID == "" {
+		return &ProtocolError{Code: "missing_uid", Message: "workload UID is required"}
+	}
+	if p.Name == "" {
+		return &ProtocolError{Code: "missing_name", Message: "workload name is required"}
+	}
+	if p.Manifest == "" {
+		return &ProtocolError{Code: "missing_manifest", Message: "manifest is required"}
 	}
 	return nil
 }

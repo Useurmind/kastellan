@@ -1,4 +1,5 @@
-default_model: qwen3-coder-next
+# default_model: qwen3-coder-next
+default_model: qwen3-coder-next-fp8
 
 agents:
   default:
@@ -15,3 +16,9 @@ agents:
         destination: /home/agent/.local/state/opencode
       - source: ~/.local/share/opencode
         destination: /home/agent/.local/share/opencode
+    tmpfsMounts:
+      - destination: /cache
+        size: "512m"
+    writablePaths:
+      - name: home
+        destination: /home/agent

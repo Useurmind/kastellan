@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kastellan/kastellan/pkg/agentprotocol/client"
+	"github.com/useurmind/kastellan/pkg/agentprotocol/client"
+	"github.com/useurmind/kastellan/pkg/agentprotocol/messages"
 )
 
 func TestReconnector(t *testing.T) {
@@ -21,8 +22,11 @@ func TestReconnector(t *testing.T) {
 	// Test ResetDelay
 	reconnector.ResetDelay()
 	delay2 := reconnector.NextDelay()
-	if delay2 != time.Second {
-		t.Errorf("ResetDelay() NextDelay() returned %v, expected 1s", delay2)
+	// ResetDelay sets currentDelay to initialDelay, but NextDelay adds jitter (0-50%)
+	// So we expect delay2 to be between 1s and 1.5s
+	maxExpected := time.Duration(float64(time.Second) * 1.5)
+	if delay2 < time.Second || delay2 > maxExpected {
+		t.Errorf("ResetDelay() NextDelay() returned %v, expected between 1s and 1.5s", delay2)
 	}
 
 	// Test ShouldRetry
@@ -32,8 +36,9 @@ func TestReconnector(t *testing.T) {
 
 	// Test IncrementRetry
 	reconnector.IncrementRetry()
-	if reconnector.ShouldRetry() {
-		t.Error("ShouldRetry() returned true after increment, expected false with maxRetries=0")
+	// maxRetries=0 means infinite retries, so ShouldRetry should return true
+	if !reconnector.ShouldRetry() {
+		t.Error("ShouldRetry() returned false after increment, expected true with maxRetries=0")
 	}
 }
 
@@ -119,7 +124,7 @@ func TestCreateHeartbeatMessage(t *testing.T) {
 
 func TestCreateReconciliationResult(t *testing.T) {
 	// Test CreateReconciliationResult
-	workloads := []client.WorkloadResult{
+	workloads := []messages.WorkloadResult{
 		{
 			UID:        "test-uid",
 			Namespace:  "default",
@@ -129,7 +134,14 @@ func TestCreateReconciliationResult(t *testing.T) {
 		},
 	}
 
-	result := client.CreateReconciliationResult("session-123", "lb01", 42, workloads)
+	result := messages.ReconciliationResult{
+		Type:      messages.MessageTypeReconciliationResult,
+		SessionID: "session-123",
+		Host:      "lb01",
+		Revision:  42,
+		Timestamp: time.Now(),
+		Workloads: workloads,
+	}
 
 	if result.Type != "ReconciliationResult" {
 		t.Errorf("MessageType mismatch: got %v, want ReconciliationResult", result.Type)
@@ -153,21 +165,27 @@ func TestBackoffDelay(t *testing.T) {
 	initial := time.Second
 	max := time.Minute
 
-	// Test first attempt
+	// Test first attempt (attempt 0: initial * 1, with 0-50% jitter)
 	delay1 := client.BackoffDelay(0, initial, max)
-	if delay1 < initial || delay1 > initial*2 {
-		t.Errorf("BackoffDelay(0) returned %v, expected between %v and %v", delay1, initial, initial*2)
+	// With jitter (0-50%), delay1 should be between 1s and 1.5s
+	maxExpected1 := time.Duration(float64(initial) * 1.5)
+	if delay1 < initial || delay1 > maxExpected1 {
+		t.Errorf("BackoffDelay(0) returned %v, expected between %v and %v", delay1, initial, maxExpected1)
 	}
 
-	// Test second attempt
+	// Test second attempt (attempt 1: initial * 2, with 0-50% jitter)
 	delay2 := client.BackoffDelay(1, initial, max)
-	if delay2 < initial*2 || delay2 > initial*3 {
-		t.Errorf("BackoffDelay(1) returned %v, expected between %v and %v", delay2, initial*2, initial*3)
+	// With jitter (0-50%), delay2 should be between 2s and 3s
+	maxExpected2 := time.Duration(float64(initial*2) * 1.5)
+	if delay2 < initial*2 || delay2 > maxExpected2 {
+		t.Errorf("BackoffDelay(1) returned %v, expected between %v and %v", delay2, initial*2, maxExpected2)
 	}
 
-	// Test max cap
+	// Test max cap (attempt 10: initial * 1024, capped at max, with 0-50% jitter)
 	delay3 := client.BackoffDelay(10, initial, max)
-	if delay3 > max {
-		t.Errorf("BackoffDelay(10) returned %v, expected at most %v", delay3, max)
+	// With jitter (0-50%), delay3 should be between max and 1.5*max
+	maxExpected3 := time.Duration(float64(max) * 1.5)
+	if delay3 > maxExpected3 {
+		t.Errorf("BackoffDelay(10) returned %v, expected at most %v", delay3, maxExpected3)
 	}
 }

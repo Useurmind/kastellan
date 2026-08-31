@@ -42,8 +42,8 @@ import (
     "context"
     "time"
     
-    "github.com/kastellan/kastellan/pkg/agentprotocol/client"
-    "github.com/kastellan/kastellan/pkg/agentprotocol/messages"
+    "github.com/useurmind/kastellan/pkg/agentprotocol/client"
+    "github.com/useurmind/kastellan/pkg/agentprotocol/messages"
 )
 
 // Create a new client
@@ -173,8 +173,8 @@ The package provides error types for different error conditions:
 
 ```go
 import (
-    "github.com/kastellan/kastellan/pkg/agentprotocol"
-    "github.com/kastellan/kastellan/pkg/agentprotocol/messages"
+    "github.com/useurmind/kastellan/pkg/agentprotocol"
+    "github.com/useurmind/kastellan/pkg/agentprotocol/messages"
 )
 
 // Check for protocol errors
@@ -228,7 +228,7 @@ go test ./pkg/agentprotocol/... -v
 Generate documentation:
 
 ```bash
-go doc -all github.com/kastellan/kastellan/pkg/agentprotocol
+go doc -all github.com/useurmind/kastellan/pkg/agentprotocol
 ```
 
 ## License

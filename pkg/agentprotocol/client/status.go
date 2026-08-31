@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
+	"github.com/useurmind/kastellan/pkg/agentprotocol/messages"
 )
 
 // StatusReporter reports workload status to the operator.
@@ -149,7 +149,7 @@ func (r *StatusReporter) reportStatus(ctx context.Context) error {
 	}
 
 	// Create reconciliation result
-	result := &messages.ReconciliationResult{
+	_ = &messages.ReconciliationResult{
 		Type:      messages.MessageTypeReconciliationResult,
 		SessionID: "", // Would be set from connection
 		Host:      "", // Would be set from connection

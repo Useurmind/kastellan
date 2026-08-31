@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
+	"github.com/useurmind/kastellan/pkg/agentprotocol/messages"
 )
 
 func TestAgentHello(t *testing.T) {
@@ -381,16 +381,16 @@ func TestProtocolError(t *testing.T) {
 	}
 
 	// Test JSON marshaling
-	data, err := json.Marshal(err)
-	if err != nil {
-		t.Errorf("MarshalJSON() error = %v", err)
+	marshaledData, marshalErr := json.Marshal(err)
+	if marshalErr != nil {
+		t.Errorf("MarshalJSON() error = %v", marshalErr)
 	}
 
 	// Test JSON unmarshaling
 	var unmarshaled messages.ProtocolError
-	err = json.Unmarshal(data, &unmarshaled)
-	if err != nil {
-		t.Errorf("UnmarshalJSON() error = %v", err)
+	unmarshalErr := json.Unmarshal(marshaledData, &unmarshaled)
+	if unmarshalErr != nil {
+		t.Errorf("UnmarshalJSON() error = %v", unmarshalErr)
 	}
 
 	// Verify unmarshaled data

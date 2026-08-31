@@ -5,9 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
-	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -62,82 +61,50 @@ func (c *Connection) WithCertificates(certPath, keyPath, caPath string) *Connect
 // CreateTLSConfig creates the TLS configuration for mTLS.
 func (c *Connection) CreateTLSConfig() (*tls.Config, error) {
 	// Load CA certificate
-	caCert, err := c.loadCertificate(c.caPath)
+	caCert, err := os.ReadFile(c.caPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CA certificate: %w", err)
 	}
 
 	// Load client certificate
-	clientCert, err := c.loadCertificate(c.certPath)
+	clientCert, err := os.ReadFile(c.certPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load client certificate: %w", err)
 	}
 
 	// Load client private key
-	clientKey, err := c.loadPrivateKey(c.keyPath)
+	clientKey, err := os.ReadFile(c.keyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load client private key: %w", err)
 	}
 
+	// Parse client certificate
+	cert, err := tls.X509KeyPair(clientCert, clientKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse client certificate: %w", err)
+	}
+
+	// Create CA cert pool
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("failed to append CA certificate")
+	}
+
 	// Create TLS config
 	config := &tls.Config{
-		Certificates: []tls.Certificate{{
-			Certificate: [][]byte{clientCert},
-			PrivateKey:  clientKey,
-			Leaf:        clientCert,
-		}},
-		RootCAs:    caCert,
-		ServerName: c.serverName,
-		MinVersion: tls.VersionTLS13,
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+		ServerName:   c.serverName,
+		MinVersion:   tls.VersionTLS13,
 	}
 
 	return config, nil
 }
 
-// loadCertificate loads a certificate from a file.
+// loadCertificate loads a certificate from a file (deprecated, kept for compatibility).
+// Deprecated: Use CreateTLSConfig which handles all certificate loading internally.
 func (c *Connection) loadCertificate(path string) (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-
-	data, err := io.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if !pool.AppendCertsFromPEM(data) {
-		return nil, fmt.Errorf("failed to append certificate from %s", path)
-	}
-
-	return pool, nil
-}
-
-// loadPrivateKey loads a private key from a file.
-func (c *Connection) loadPrivateKey(path string) (interface{}, error) {
-	data, err := io.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	block, _ := pem.Decode(data)
-	if block == nil {
-		return nil, fmt.Errorf("failed to decode PEM block from %s", path)
-	}
-
-	// Try to parse as RSA private key
-	if block.Type == "RSA PRIVATE KEY" {
-		return x509.ParsePKCS1PrivateKey(block.Bytes)
-	}
-
-	// Try to parse as EC private key
-	if block.Type == "EC PRIVATE KEY" {
-		return x509.ParseECPrivateKey(block.Bytes)
-	}
-
-	// Try to parse as PKCS#8 private key
-	if block.Type == "PRIVATE KEY" {
-		return x509.ParsePKCS8PrivateKey(block.Bytes)
-	}
-
-	return nil, fmt.Errorf("unknown private key type: %s", block.Type)
+	return nil, fmt.Errorf("deprecated: use CreateTLSConfig instead")
 }
 
 // Connect establishes a gRPC connection to the operator.
@@ -213,25 +180,6 @@ func (c *Connection) NewStream(ctx context.Context, desc *grpc.StreamDesc, metho
 	}
 
 	return c.conn.NewStream(ctx, desc, method, opts...)
-}
-
-// SendRequest sends a request through the stream.
-func (c *Connection) SendRequest(ctx context.Context, stream grpc.ClientStream, data []byte) error {
-	_, err := stream.Write(data)
-	if err != nil {
-		return fmt.Errorf("failed to write to stream: %w", err)
-	}
-	return nil
-}
-
-// RecvResponse receives a response from the stream.
-func (c *Connection) RecvResponse(ctx context.Context, stream grpc.ClientStream) ([]byte, error) {
-	data := make([]byte, 4096)
-	n, err := stream.Read(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read from stream: %w", err)
-	}
-	return data[:n], nil
 }
 
 // SendMetadata sends metadata with the request.

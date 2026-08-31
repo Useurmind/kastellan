@@ -124,6 +124,9 @@ const (
 	MessageTypeEnrollmentResponse         = "EnrollmentResponse"
 	MessageTypeDesiredState               = "DesiredState"
 	MessageTypeDesiredStateUpdate         = "DesiredStateUpdate"
+	MessageTypeReconcileRequest           = "ReconcileRequest"
+	MessageTypeCertificateRotationResponse = "CertificateRotationResponse"
+	MessageTypeConnectionClose            = "ConnectionClose"
 )
 
 // Error type constants.

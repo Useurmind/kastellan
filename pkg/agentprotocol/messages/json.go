@@ -804,3 +804,133 @@ func (t MessageType) String() string {
 func (p *ProtocolError) String() string {
 	return fmt.Sprintf("%s: %s", p.Code, p.Message)
 }
+
+// MarshalJSON marshals the message to JSON bytes.
+func (r *ReconcileRequest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Type      MessageType `json:"type"`
+		SessionID string      `json:"sessionId"`
+		Host      string      `json:"host"`
+		Revision  int64       `json:"revision"`
+		Timestamp time.Time   `json:"timestamp"`
+	}{
+		Type:      r.Type,
+		SessionID: r.SessionID,
+		Host:      r.Host,
+		Revision:  r.Revision,
+		Timestamp: r.Timestamp,
+	})
+}
+
+// UnmarshalJSON unmarshals JSON bytes into ReconcileRequest.
+func (r *ReconcileRequest) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Type      MessageType `json:"type"`
+		SessionID string      `json:"sessionId"`
+		Host      string      `json:"host"`
+		Revision  int64       `json:"revision"`
+		Timestamp time.Time   `json:"timestamp"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	r.Type = raw.Type
+	r.SessionID = raw.SessionID
+	r.Host = raw.Host
+	r.Revision = raw.Revision
+	r.Timestamp = raw.Timestamp
+
+	return nil
+}
+
+// MarshalJSON marshals the message to JSON bytes.
+func (c *CertificateRotationResponse) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Type      MessageType `json:"type"`
+		SessionID string      `json:"sessionId"`
+		Success   bool        `json:"success"`
+		Error     string      `json:"error,omitempty"`
+		Identity  struct {
+			Certificate string `json:"certificate,omitempty"`
+			PrivateKey  string `json:"privateKey,omitempty"`
+			CABundle    string `json:"caBundle,omitempty"`
+		} `json:"identity,omitempty"`
+		Timestamp time.Time `json:"timestamp"`
+	}{
+		Type:      c.Type,
+		SessionID: c.SessionID,
+		Success:   c.Success,
+		Error:     c.Error,
+		Identity:  c.Identity,
+		Timestamp: c.Timestamp,
+	})
+}
+
+// UnmarshalJSON unmarshals JSON bytes into CertificateRotationResponse.
+func (c *CertificateRotationResponse) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Type      MessageType `json:"type"`
+		SessionID string      `json:"sessionId"`
+		Success   bool        `json:"success"`
+		Error     string      `json:"error,omitempty"`
+		Identity  struct {
+			Certificate string `json:"certificate,omitempty"`
+			PrivateKey  string `json:"privateKey,omitempty"`
+			CABundle    string `json:"caBundle,omitempty"`
+		} `json:"identity,omitempty"`
+		Timestamp time.Time `json:"timestamp"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	c.Type = raw.Type
+	c.SessionID = raw.SessionID
+	c.Success = raw.Success
+	c.Error = raw.Error
+	c.Identity.Certificate = raw.Identity.Certificate
+	c.Identity.PrivateKey = raw.Identity.PrivateKey
+	c.Identity.CABundle = raw.Identity.CABundle
+	c.Timestamp = raw.Timestamp
+
+	return nil
+}
+
+// MarshalJSON marshals the message to JSON bytes.
+func (c *ConnectionClose) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Type      MessageType `json:"type"`
+		SessionID string      `json:"sessionId"`
+		Reason    string      `json:"reason,omitempty"`
+		Timestamp time.Time   `json:"timestamp"`
+	}{
+		Type:      c.Type,
+		SessionID: c.SessionID,
+		Reason:    c.Reason,
+		Timestamp: c.Timestamp,
+	})
+}
+
+// UnmarshalJSON unmarshals JSON bytes into ConnectionClose.
+func (c *ConnectionClose) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Type      MessageType `json:"type"`
+		SessionID string      `json:"sessionId"`
+		Reason    string      `json:"reason,omitempty"`
+		Timestamp time.Time   `json:"timestamp"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	c.Type = raw.Type
+	c.SessionID = raw.SessionID
+	c.Reason = raw.Reason
+	c.Timestamp = raw.Timestamp
+
+	return nil
+}
