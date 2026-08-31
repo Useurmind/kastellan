@@ -18,3 +18,20 @@ resources:
 - metrics_auth_role.yaml
 - metrics_auth_role_binding.yaml
 - metrics_reader_role.yaml
+# For each CRD, "Admin", "Editor" and "Viewer" roles are scaffolded by
+# default, aiding admins in cluster management. Those roles are
+# not used by the kastellan itself. You can comment the following lines
+# if you do not want those helpers be installed with your Project.
+- podmanplay_admin_role.yaml
+- podmanplay_editor_role.yaml
+- podmanplay_viewer_role.yaml
+- externalhostgroup_admin_role.yaml
+- externalhostgroup_editor_role.yaml
+- externalhostgroup_viewer_role.yaml
+- dockerstack_admin_role.yaml
+- dockerstack_editor_role.yaml
+- dockerstack_viewer_role.yaml
+- externalhost_admin_role.yaml
+- externalhost_editor_role.yaml
+- externalhost_viewer_role.yaml
+

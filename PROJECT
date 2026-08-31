@@ -8,4 +8,37 @@ layout:
 - go.kubebuilder.io/v4
 projectName: kastellan
 repo: github.com/useurmind/kastellan
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kastellan.useurmind.de
+  kind: ExternalHost
+  path: github.com/useurmind/kastellan/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kastellan.useurmind.de
+  kind: DockerStack
+  path: github.com/useurmind/kastellan/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kastellan.useurmind.de
+  kind: ExternalHostGroup
+  path: github.com/useurmind/kastellan/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kastellan.useurmind.de
+  kind: PodmanPlay
+  path: github.com/useurmind/kastellan/api/v1
+  version: v1
 version: "3"

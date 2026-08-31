@@ -1,11 +1,41 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: kastellan
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - kastellan.useurmind.de
+  resources:
+  - dockerstacks
+  - externalhostgroups
+  - externalhosts
+  - podmanplays
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kastellan.useurmind.de
+  resources:
+  - dockerstacks/finalizers
+  - externalhostgroups/finalizers
+  - externalhosts/finalizers
+  - podmanplays/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kastellan.useurmind.de
+  resources:
+  - dockerstacks/status
+  - externalhostgroups/status
+  - externalhosts/status
+  - podmanplays/status
+  verbs:
+  - get
+  - patch
+  - update

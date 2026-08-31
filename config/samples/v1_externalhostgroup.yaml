@@ -1,0 +1,9 @@
+apiVersion: kastellan.useurmind.de/v1
+kind: ExternalHostGroup
+metadata:
+  labels:
+    app.kubernetes.io/name: kastellan
+    app.kubernetes.io/managed-by: kustomize
+  name: externalhostgroup-sample
+spec:
+  # TODO(user): Add fields here

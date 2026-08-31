@@ -1,0 +1,7 @@
+## Append samples of your project ##
+resources:
+- v1_externalhost.yaml
+- v1_dockerstack.yaml
+- v1_externalhostgroup.yaml
+- v1_podmanplay.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
