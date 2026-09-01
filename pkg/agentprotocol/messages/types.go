@@ -11,19 +11,19 @@ type MessageType string
 
 const (
 	// Agent messages
-	MessageTypeAgentHello           MessageType = "AgentHello"
-	MessageTypeEnrollmentRequest    MessageType = "EnrollmentRequest"
-	MessageTypeHeartbeat            MessageType = "Heartbeat"
-	MessageTypeHostInventory        MessageType = "HostInventory"
-	MessageTypeReconciliationResult MessageType = "ReconciliationResult"
-	MessageTypeWorkloadStatus       MessageType = "WorkloadStatus"
+	MessageTypeAgentHello                 MessageType = "AgentHello"
+	MessageTypeEnrollmentRequest          MessageType = "EnrollmentRequest"
+	MessageTypeHeartbeat                  MessageType = "Heartbeat"
+	MessageTypeHostInventory              MessageType = "HostInventory"
+	MessageTypeReconciliationResult       MessageType = "ReconciliationResult"
+	MessageTypeWorkloadStatus             MessageType = "WorkloadStatus"
 	MessageTypeCertificateRotationRequest MessageType = "CertificateRotationRequest"
 
 	// Operator messages
-	MessageTypeOperatorHello        MessageType = "OperatorHello"
-	MessageTypeEnrollmentResponse   MessageType = "EnrollmentResponse"
-	MessageTypeDesiredState         MessageType = "DesiredState"
-	MessageTypeDesiredStateUpdate   MessageType = "DesiredStateUpdate"
+	MessageTypeOperatorHello      MessageType = "OperatorHello"
+	MessageTypeEnrollmentResponse MessageType = "EnrollmentResponse"
+	MessageTypeDesiredState       MessageType = "DesiredState"
+	MessageTypeDesiredStateUpdate MessageType = "DesiredStateUpdate"
 )
 
 // AgentHello is the initial connection message sent by the agent.
@@ -174,13 +174,13 @@ type HostInventory struct {
 
 	// Host information
 	Host struct {
-		Name      string `json:"name"`
-		Hostname  string `json:"hostname"`
-		OS        string `json:"os"`
-		Kernel    string `json:"kernel"`
-		CPU       string `json:"cpu"`
-		Memory    string `json:"memory"`
-		Storage   string `json:"storage"`
+		Name     string `json:"name"`
+		Hostname string `json:"hostname"`
+		OS       string `json:"os"`
+		Kernel   string `json:"kernel"`
+		CPU      string `json:"cpu"`
+		Memory   string `json:"memory"`
+		Storage  string `json:"storage"`
 	} `json:"host"`
 
 	// Podman runtime information
@@ -217,16 +217,16 @@ type ReconciliationResult struct {
 // WorkloadResult represents the result for a single workload.
 type WorkloadResult struct {
 	// Workload identification
-	UID         string `json:"uid"`
-	Namespace   string `json:"namespace"`
-	Name        string `json:"name"`
-	Generation  int64  `json:"generation"`
+	UID        string `json:"uid"`
+	Namespace  string `json:"namespace"`
+	Name       string `json:"name"`
+	Generation int64  `json:"generation"`
 
 	// Current phase
 	Phase string `json:"phase"`
 
 	// Error details if phase is Failed
-	Reason string `json:"reason,omitempty"`
+	Reason  string `json:"reason,omitempty"`
 	Message string `json:"message,omitempty"`
 
 	// Manifest digest
@@ -234,7 +234,7 @@ type WorkloadResult struct {
 
 	// Runtime information
 	Runtime struct {
-		PodID      string `json:"podId,omitempty"`
+		PodID      string          `json:"podId,omitempty"`
 		Containers []ContainerInfo `json:"containers,omitempty"`
 	} `json:"runtime,omitempty"`
 }
@@ -257,17 +257,17 @@ type WorkloadStatus struct {
 	Timestamp time.Time `json:"timestamp"`
 
 	// Workload identification
-	UID         string `json:"uid"`
-	Namespace   string `json:"namespace"`
-	Name        string `json:"name"`
-	Generation  int64  `json:"generation"`
+	UID        string `json:"uid"`
+	Namespace  string `json:"namespace"`
+	Name       string `json:"name"`
+	Generation int64  `json:"generation"`
 
 	// Current phase
 	Phase string `json:"phase"`
 
 	// Runtime information
 	Runtime struct {
-		PodID      string `json:"podId,omitempty"`
+		PodID      string          `json:"podId,omitempty"`
 		Containers []ContainerInfo `json:"containers,omitempty"`
 	} `json:"runtime,omitempty"`
 }

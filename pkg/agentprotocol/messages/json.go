@@ -9,7 +9,7 @@ import (
 // MarshalJSON marshals the message to JSON bytes.
 func (a *AgentHello) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type MessageType `json:"type"`
+		Type  MessageType `json:"type"`
 		Agent struct {
 			ID      string `json:"id"`
 			Version string `json:"version"`
@@ -20,11 +20,11 @@ func (a *AgentHello) MarshalJSON() ([]byte, error) {
 			IPAddress string `json:"ipAddress,omitempty"`
 		} `json:"host"`
 		ProtocolVersions []string `json:"protocolVersions"`
-		Runtime struct {
+		Runtime          struct {
 			Name    string `json:"name"`
 			Version string `json:"version"`
 		} `json:"runtime"`
-		Capabilities []string `json:"capabilities"`
+		Capabilities []string  `json:"capabilities"`
 		Timestamp    time.Time `json:"timestamp"`
 	}{
 		Type:             a.Type,
@@ -40,7 +40,7 @@ func (a *AgentHello) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals JSON bytes into AgentHello.
 func (a *AgentHello) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Type MessageType `json:"type"`
+		Type  MessageType `json:"type"`
 		Agent struct {
 			ID      string `json:"id"`
 			Version string `json:"version"`
@@ -51,11 +51,11 @@ func (a *AgentHello) UnmarshalJSON(data []byte) error {
 			IPAddress string `json:"ipAddress,omitempty"`
 		} `json:"host"`
 		ProtocolVersions []string `json:"protocolVersions"`
-		Runtime struct {
+		Runtime          struct {
 			Name    string `json:"name"`
 			Version string `json:"version"`
 		} `json:"runtime"`
-		Capabilities []string `json:"capabilities"`
+		Capabilities []string  `json:"capabilities"`
 		Timestamp    time.Time `json:"timestamp"`
 	}
 
@@ -81,12 +81,12 @@ func (a *AgentHello) UnmarshalJSON(data []byte) error {
 // MarshalJSON marshals the message to JSON bytes.
 func (o *OperatorHello) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type MessageType `json:"type"`
+		Type    MessageType `json:"type"`
 		Session struct {
 			ID string `json:"id"`
 		} `json:"session"`
 		ProtocolVersion string `json:"protocolVersion"`
-		Configuration struct {
+		Configuration   struct {
 			HeartbeatInterval    string `json:"heartbeatInterval"`
 			StateReportInterval  string `json:"stateReportInterval"`
 			OfflineAfter         string `json:"offlineAfter"`
@@ -94,23 +94,23 @@ func (o *OperatorHello) MarshalJSON() ([]byte, error) {
 		} `json:"configuration"`
 		Timestamp time.Time `json:"timestamp"`
 	}{
-		Type:              o.Type,
-		Session:           o.Session,
-		ProtocolVersion:   o.ProtocolVersion,
-		Configuration:     o.Configuration,
-		Timestamp:         o.Timestamp,
+		Type:            o.Type,
+		Session:         o.Session,
+		ProtocolVersion: o.ProtocolVersion,
+		Configuration:   o.Configuration,
+		Timestamp:       o.Timestamp,
 	})
 }
 
 // UnmarshalJSON unmarshals JSON bytes into OperatorHello.
 func (o *OperatorHello) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Type MessageType `json:"type"`
+		Type    MessageType `json:"type"`
 		Session struct {
 			ID string `json:"id"`
 		} `json:"session"`
 		ProtocolVersion string `json:"protocolVersion"`
-		Configuration struct {
+		Configuration   struct {
 			HeartbeatInterval    string `json:"heartbeatInterval"`
 			StateReportInterval  string `json:"stateReportInterval"`
 			OfflineAfter         string `json:"offlineAfter"`
@@ -138,9 +138,9 @@ func (o *OperatorHello) UnmarshalJSON(data []byte) error {
 // MarshalJSON marshals the message to JSON bytes.
 func (e *EnrollmentRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type MessageType `json:"type"`
-		Token  string      `json:"token"`
-		Agent  struct {
+		Type  MessageType `json:"type"`
+		Token string      `json:"token"`
+		Agent struct {
 			ID      string `json:"id"`
 			Version string `json:"version"`
 		} `json:"agent"`
@@ -162,9 +162,9 @@ func (e *EnrollmentRequest) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals JSON bytes into EnrollmentRequest.
 func (e *EnrollmentRequest) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Type MessageType `json:"type"`
-		Token  string      `json:"token"`
-		Agent  struct {
+		Type  MessageType `json:"type"`
+		Token string      `json:"token"`
+		Agent struct {
 			ID      string `json:"id"`
 			Version string `json:"version"`
 		} `json:"agent"`
@@ -195,10 +195,10 @@ func (e *EnrollmentRequest) UnmarshalJSON(data []byte) error {
 // MarshalJSON marshals the message to JSON bytes.
 func (e *EnrollmentResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type      MessageType `json:"type"`
-		Success   bool        `json:"success"`
-		Error     string      `json:"error,omitempty"`
-		Identity  struct {
+		Type     MessageType `json:"type"`
+		Success  bool        `json:"success"`
+		Error    string      `json:"error,omitempty"`
+		Identity struct {
 			Certificate string `json:"certificate"`
 			PrivateKey  string `json:"privateKey"`
 			CABundle    string `json:"caBundle"`
@@ -218,10 +218,10 @@ func (e *EnrollmentResponse) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals JSON bytes into EnrollmentResponse.
 func (e *EnrollmentResponse) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Type      MessageType `json:"type"`
-		Success   bool        `json:"success"`
-		Error     string      `json:"error,omitempty"`
-		Identity  struct {
+		Type     MessageType `json:"type"`
+		Success  bool        `json:"success"`
+		Error    string      `json:"error,omitempty"`
+		Identity struct {
 			Certificate string `json:"certificate"`
 			PrivateKey  string `json:"privateKey"`
 			CABundle    string `json:"caBundle"`
@@ -324,13 +324,13 @@ func (h *HostInventory) MarshalJSON() ([]byte, error) {
 		SessionID string      `json:"sessionId"`
 		Timestamp time.Time   `json:"timestamp"`
 		Host      struct {
-			Name      string `json:"name"`
-			Hostname  string `json:"hostname"`
-			OS        string `json:"os"`
-			Kernel    string `json:"kernel"`
-			CPU       string `json:"cpu"`
-			Memory    string `json:"memory"`
-			Storage   string `json:"storage"`
+			Name     string `json:"name"`
+			Hostname string `json:"hostname"`
+			OS       string `json:"os"`
+			Kernel   string `json:"kernel"`
+			CPU      string `json:"cpu"`
+			Memory   string `json:"memory"`
+			Storage  string `json:"storage"`
 		} `json:"host"`
 		Podman struct {
 			Version    string `json:"version"`
@@ -355,13 +355,13 @@ func (h *HostInventory) UnmarshalJSON(data []byte) error {
 		SessionID string      `json:"sessionId"`
 		Timestamp time.Time   `json:"timestamp"`
 		Host      struct {
-			Name      string `json:"name"`
-			Hostname  string `json:"hostname"`
-			OS        string `json:"os"`
-			Kernel    string `json:"kernel"`
-			CPU       string `json:"cpu"`
-			Memory    string `json:"memory"`
-			Storage   string `json:"storage"`
+			Name     string `json:"name"`
+			Hostname string `json:"hostname"`
+			OS       string `json:"os"`
+			Kernel   string `json:"kernel"`
+			CPU      string `json:"cpu"`
+			Memory   string `json:"memory"`
+			Storage  string `json:"storage"`
 		} `json:"host"`
 		Podman struct {
 			Version    string `json:"version"`
@@ -396,11 +396,11 @@ func (h *HostInventory) UnmarshalJSON(data []byte) error {
 // MarshalJSON marshals the message to JSON bytes.
 func (r *ReconciliationResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type      MessageType    `json:"type"`
-		SessionID string         `json:"sessionId"`
-		Host      string         `json:"host"`
-		Revision  int64          `json:"revision"`
-		Timestamp time.Time      `json:"timestamp"`
+		Type      MessageType      `json:"type"`
+		SessionID string           `json:"sessionId"`
+		Host      string           `json:"host"`
+		Revision  int64            `json:"revision"`
+		Timestamp time.Time        `json:"timestamp"`
 		Workloads []WorkloadResult `json:"workloads"`
 	}{
 		Type:      r.Type,
@@ -541,15 +541,15 @@ func (c *ContainerInfo) UnmarshalJSON(data []byte) error {
 // MarshalJSON marshals the message to JSON bytes.
 func (w *WorkloadStatus) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type      MessageType `json:"type"`
-		SessionID string      `json:"sessionId"`
-		Timestamp time.Time   `json:"timestamp"`
-		UID       string      `json:"uid"`
-		Namespace string      `json:"namespace"`
-		Name      string      `json:"name"`
-		Generation int64      `json:"generation"`
-		Phase     string      `json:"phase"`
-		Runtime   struct {
+		Type       MessageType `json:"type"`
+		SessionID  string      `json:"sessionId"`
+		Timestamp  time.Time   `json:"timestamp"`
+		UID        string      `json:"uid"`
+		Namespace  string      `json:"namespace"`
+		Name       string      `json:"name"`
+		Generation int64       `json:"generation"`
+		Phase      string      `json:"phase"`
+		Runtime    struct {
 			PodID      string          `json:"podId,omitempty"`
 			Containers []ContainerInfo `json:"containers,omitempty"`
 		} `json:"runtime,omitempty"`
@@ -575,15 +575,15 @@ func (w *WorkloadStatus) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals JSON bytes into WorkloadStatus.
 func (w *WorkloadStatus) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Type      MessageType `json:"type"`
-		SessionID string      `json:"sessionId"`
-		Timestamp time.Time   `json:"timestamp"`
-		UID       string      `json:"uid"`
-		Namespace string      `json:"namespace"`
-		Name      string      `json:"name"`
-		Generation int64      `json:"generation"`
-		Phase     string      `json:"phase"`
-		Runtime   struct {
+		Type       MessageType `json:"type"`
+		SessionID  string      `json:"sessionId"`
+		Timestamp  time.Time   `json:"timestamp"`
+		UID        string      `json:"uid"`
+		Namespace  string      `json:"namespace"`
+		Name       string      `json:"name"`
+		Generation int64       `json:"generation"`
+		Phase      string      `json:"phase"`
+		Runtime    struct {
 			PodID      string          `json:"podId,omitempty"`
 			Containers []ContainerInfo `json:"containers,omitempty"`
 		} `json:"runtime,omitempty"`
@@ -642,10 +642,10 @@ func (c *CertificateRotationRequest) UnmarshalJSON(data []byte) error {
 // MarshalJSON marshals the message to JSON bytes.
 func (d *DesiredState) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type      MessageType `json:"type"`
-		Host      string      `json:"host"`
-		Revision  int64       `json:"revision"`
-		Timestamp time.Time   `json:"timestamp"`
+		Type        MessageType  `json:"type"`
+		Host        string       `json:"host"`
+		Revision    int64        `json:"revision"`
+		Timestamp   time.Time    `json:"timestamp"`
 		PodmanPlays []PodmanPlay `json:"podmanPlays"`
 	}{
 		Type:        d.Type,
@@ -659,10 +659,10 @@ func (d *DesiredState) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals JSON bytes into DesiredState.
 func (d *DesiredState) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Type      MessageType    `json:"type"`
-		Host      string         `json:"host"`
-		Revision  int64          `json:"revision"`
-		Timestamp time.Time      `json:"timestamp"`
+		Type        MessageType  `json:"type"`
+		Host        string       `json:"host"`
+		Revision    int64        `json:"revision"`
+		Timestamp   time.Time    `json:"timestamp"`
 		PodmanPlays []PodmanPlay `json:"podmanPlays"`
 	}
 

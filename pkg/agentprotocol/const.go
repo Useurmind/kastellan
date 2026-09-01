@@ -113,20 +113,20 @@ const (
 
 // Message type constants.
 const (
-	MessageTypeAgentHello                 = "AgentHello"
-	MessageTypeEnrollmentRequest          = "EnrollmentRequest"
-	MessageTypeHeartbeat                  = "Heartbeat"
-	MessageTypeHostInventory              = "HostInventory"
-	MessageTypeReconciliationResult       = "ReconciliationResult"
-	MessageTypeWorkloadStatus             = "WorkloadStatus"
-	MessageTypeCertificateRotationRequest = "CertificateRotationRequest"
-	MessageTypeOperatorHello              = "OperatorHello"
-	MessageTypeEnrollmentResponse         = "EnrollmentResponse"
-	MessageTypeDesiredState               = "DesiredState"
-	MessageTypeDesiredStateUpdate         = "DesiredStateUpdate"
-	MessageTypeReconcileRequest           = "ReconcileRequest"
+	MessageTypeAgentHello                  = "AgentHello"
+	MessageTypeEnrollmentRequest           = "EnrollmentRequest"
+	MessageTypeHeartbeat                   = "Heartbeat"
+	MessageTypeHostInventory               = "HostInventory"
+	MessageTypeReconciliationResult        = "ReconciliationResult"
+	MessageTypeWorkloadStatus              = "WorkloadStatus"
+	MessageTypeCertificateRotationRequest  = "CertificateRotationRequest"
+	MessageTypeOperatorHello               = "OperatorHello"
+	MessageTypeEnrollmentResponse          = "EnrollmentResponse"
+	MessageTypeDesiredState                = "DesiredState"
+	MessageTypeDesiredStateUpdate          = "DesiredStateUpdate"
+	MessageTypeReconcileRequest            = "ReconcileRequest"
 	MessageTypeCertificateRotationResponse = "CertificateRotationResponse"
-	MessageTypeConnectionClose            = "ConnectionClose"
+	MessageTypeConnectionClose             = "ConnectionClose"
 )
 
 // Error type constants.

@@ -20,25 +20,25 @@ import (
 // Client represents the agent protocol client.
 type Client struct {
 	// Configuration
-	serverAddress string
+	serverAddress   string
 	enrollmentToken string
-	agentID       string
-	agentVersion  string
-	hostName      string
-	hostHostname  string
+	agentID         string
+	agentVersion    string
+	hostName        string
+	hostHostname    string
 
 	// TLS configuration
-	certPath      string
-	keyPath       string
-	caPath        string
-	serverName    string
+	certPath   string
+	keyPath    string
+	caPath     string
+	serverName string
 
 	// Connection state
-	conn          *grpc.ClientConn
-	stream        grpc.ClientStream
-	ctx           context.Context
-	cancel        context.CancelFunc
-	mu            sync.RWMutex
+	conn   *grpc.ClientConn
+	stream grpc.ClientStream
+	ctx    context.Context
+	cancel context.CancelFunc
+	mu     sync.RWMutex
 
 	// Reconnection settings
 	reconnectDelay time.Duration
@@ -54,9 +54,9 @@ type Client struct {
 	statusWG   sync.WaitGroup
 
 	// Event channels
-	connectedCh   chan struct{}
+	connectedCh    chan struct{}
 	disconnectedCh chan struct{}
-	errorCh       chan error
+	errorCh        chan error
 }
 
 // Message represents a protocol message that can be sent or received.
@@ -67,17 +67,17 @@ type Message interface {
 // New creates a new agent protocol client.
 func New(serverAddress, agentID, agentVersion, hostName, hostHostname string) *Client {
 	return &Client{
-		serverAddress:   serverAddress,
-		agentID:         agentID,
-		agentVersion:    agentVersion,
-		hostName:        hostName,
-		hostHostname:    hostHostname,
-		reconnectDelay:  time.Second,
-		maxDelay:        time.Minute,
+		serverAddress:     serverAddress,
+		agentID:           agentID,
+		agentVersion:      agentVersion,
+		hostName:          hostName,
+		hostHostname:      hostHostname,
+		reconnectDelay:    time.Second,
+		maxDelay:          time.Minute,
 		heartbeatInterval: 30 * time.Second,
-		connectedCh:     make(chan struct{}, 1),
-		disconnectedCh:  make(chan struct{}, 1),
-		errorCh:         make(chan error, 100),
+		connectedCh:       make(chan struct{}, 1),
+		disconnectedCh:    make(chan struct{}, 1),
+		errorCh:           make(chan error, 100),
 	}
 }
 
@@ -411,5 +411,3 @@ func (c *Client) GetDisconnectedChannel() <-chan struct{} {
 func (c *Client) GetErrorChannel() <-chan error {
 	return c.errorCh
 }
-
-

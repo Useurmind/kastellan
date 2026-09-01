@@ -73,12 +73,12 @@ func TestStatusReporter(t *testing.T) {
 
 	// Test UpdateWorkloadState
 	state := &client.WorkloadState{
-		UID:         "test-uid",
-		Namespace:   "default",
-		Name:        "test-workload",
-		Generation:  1,
-		Phase:       "Running",
-		LastUpdate:  time.Now(),
+		UID:        "test-uid",
+		Namespace:  "default",
+		Name:       "test-workload",
+		Generation: 1,
+		Phase:      "Running",
+		LastUpdate: time.Now(),
 	}
 	statusReporter.UpdateWorkloadState(state)
 
