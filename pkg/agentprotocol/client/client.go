@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/useurmind/kastellan/pkg/agentprotocol/messages"
+	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
 )
 
 // Client represents the agent protocol client.

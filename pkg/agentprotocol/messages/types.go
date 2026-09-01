@@ -24,6 +24,23 @@ const (
 	MessageTypeEnrollmentResponse MessageType = "EnrollmentResponse"
 	MessageTypeDesiredState       MessageType = "DesiredState"
 	MessageTypeDesiredStateUpdate MessageType = "DesiredStateUpdate"
+	MessageTypeReconcileRequest            MessageType = "ReconcileRequest"
+	MessageTypeCertificateRotationResponse MessageType = "CertificateRotationResponse"
+	MessageTypeConnectionClose             MessageType = "ConnectionClose"
+)
+
+// Capability constants
+const (
+	CapabilityPlayKube  = "play-kube"
+	CapabilityReplace   = "replace"
+	CapabilityConfigMap = "configmap"
+	CapabilitySecret    = "secret"
+	CapabilityHostPath  = "host-path"
+)
+
+// Runtime constants
+const (
+	RuntimePodman = "podman"
 )
 
 // AgentHello is the initial connection message sent by the agent.
@@ -318,6 +335,61 @@ type PodmanPlay struct {
 	Manifest string `json:"manifest"`
 }
 
+// ReconcileRequest is sent by the operator to request reconciliation.
+type ReconcileRequest struct {
+	Type MessageType `json:"type"`
+
+	// Session ID
+	SessionID string `json:"sessionId"`
+
+	// Host name
+	Host string `json:"host"`
+
+	// Revision number
+	Revision int64 `json:"revision"`
+
+	// Timestamp of the message
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// CertificateRotationResponse is sent by the operator in response to certificate rotation request.
+type CertificateRotationResponse struct {
+	Type MessageType `json:"type"`
+
+	// Session ID
+	SessionID string `json:"sessionId"`
+
+	// Success indicates if rotation was successful
+	Success bool `json:"success"`
+
+	// Error message if rotation failed
+	Error string `json:"error,omitempty"`
+
+	// New certificate and key
+	Identity struct {
+		Certificate string `json:"certificate,omitempty"`
+		PrivateKey  string `json:"privateKey,omitempty"`
+		CABundle    string `json:"caBundle,omitempty"`
+	} `json:"identity,omitempty"`
+
+	// Timestamp of the message
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// ConnectionClose is sent by the operator to close the connection.
+type ConnectionClose struct {
+	Type MessageType `json:"type"`
+
+	// Session ID
+	SessionID string `json:"sessionId"`
+
+	// Reason for closing
+	Reason string `json:"reason,omitempty"`
+
+	// Timestamp of the message
+	Timestamp time.Time `json:"timestamp"`
+}
+
 // DesiredStateUpdate is sent by the operator for incremental updates.
 type DesiredStateUpdate struct {
 	Type MessageType `json:"type"`
@@ -388,6 +460,17 @@ func (h *Heartbeat) Validate() error {
 	return nil
 }
 
+// Validate performs basic validation on ReconcileRequest.
+func (r *ReconcileRequest) Validate() error {
+	if r.SessionID == "" {
+		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
+	}
+	if r.Host == "" {
+		return &ProtocolError{Code: "missing_host", Message: "host name is required"}
+	}
+	return nil
+}
+
 // Validate performs basic validation on ReconciliationResult.
 func (r *ReconciliationResult) Validate() error {
 	if r.SessionID == "" {
@@ -399,68 +482,13 @@ func (r *ReconciliationResult) Validate() error {
 	return nil
 }
 
-// ReconcileRequest is sent by the operator to request reconciliation.
-type ReconcileRequest struct {
-	Type MessageType `json:"type"`
-
-	// Session ID
-	SessionID string `json:"sessionId"`
-
-	// Host name
-	Host string `json:"host"`
-
-	// Revision number
-	Revision int64 `json:"revision"`
-
-	// Timestamp of the message
-	Timestamp time.Time `json:"timestamp"`
-}
-
-// CertificateRotationResponse is sent by the operator in response to certificate rotation request.
-type CertificateRotationResponse struct {
-	Type MessageType `json:"type"`
-
-	// Session ID
-	SessionID string `json:"sessionId"`
-
-	// Success indicates if rotation was successful
-	Success bool `json:"success"`
-
-	// Error message if rotation failed
-	Error string `json:"error,omitempty"`
-
-	// New certificate and key
-	Identity struct {
-		Certificate string `json:"certificate,omitempty"`
-		PrivateKey  string `json:"privateKey,omitempty"`
-		CABundle    string `json:"caBundle,omitempty"`
-	} `json:"identity,omitempty"`
-
-	// Timestamp of the message
-	Timestamp time.Time `json:"timestamp"`
-}
-
-// ConnectionClose is sent by the operator to close the connection.
-type ConnectionClose struct {
-	Type MessageType `json:"type"`
-
-	// Session ID
-	SessionID string `json:"sessionId"`
-
-	// Reason for closing
-	Reason string `json:"reason,omitempty"`
-
-	// Timestamp of the message
-	Timestamp time.Time `json:"timestamp"`
-}
-
-// Validate performs basic validation on ReconcileRequest.
-func (r *ReconcileRequest) Validate() error {
-	if r.SessionID == "" {
+// Validate performs basic validation on OperatorHello.
+func (o *OperatorHello) Validate() error {
+	if o.Session.ID == "" {
 		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
 	}
-	if r.Host == "" {
-		return &ProtocolError{Code: "missing_host", Message: "host name is required"}
+	if o.ProtocolVersion == "" {
+		return &ProtocolError{Code: "missing_protocol_version", Message: "protocol version is required"}
 	}
 	return nil
 }
@@ -477,17 +505,6 @@ func (c *CertificateRotationResponse) Validate() error {
 func (c *ConnectionClose) Validate() error {
 	if c.SessionID == "" {
 		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
-	}
-	return nil
-}
-
-// Validate performs basic validation on OperatorHello.
-func (o *OperatorHello) Validate() error {
-	if o.Session.ID == "" {
-		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
-	}
-	if o.ProtocolVersion == "" {
-		return &ProtocolError{Code: "missing_protocol_version", Message: "protocol version is required"}
 	}
 	return nil
 }

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/useurmind/kastellan/pkg/agentprotocol/client"
-	"github.com/useurmind/kastellan/pkg/agentprotocol/messages"
+	"github.com/kastellan/kastellan/pkg/agentprotocol/client"
+	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
 )
 
 func TestReconnector(t *testing.T) {

@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kastellanuseurminddev1 "github.com/useurmind/kastellan/api/v1"
+	kastellanuseurminddev1 "github.com/kastellan/kastellan/api/v1"
 )
 
 // ExternalHostReconciler reconciles a ExternalHost object

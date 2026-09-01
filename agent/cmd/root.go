@@ -22,5 +22,5 @@ func Execute() {
 }
 
 func init() {
-	// Here you can define flags and configuration for the root command
+	rootCmd.AddCommand(runCmd)
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/useurmind/kastellan/pkg/agentprotocol/messages"
+	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
 )
 
 func TestAgentHello(t *testing.T) {

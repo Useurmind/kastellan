@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/useurmind/kastellan/pkg/agentprotocol/messages"
+	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
 )
 
 // HeartbeatManager manages heartbeat sending.
