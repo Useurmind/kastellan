@@ -218,11 +218,11 @@ func (d *DesiredStateUpdate) Validate() error {
 // ToProto converts OperatorHello to proto OperatorHello.
 func (o *OperatorHello) ToProto() *agentv1alpha1.OperatorHello {
 	return &agentv1alpha1.OperatorHello{
-		SessionId:                 o.Session.ID,
-		SelectedProtocol:          &agentv1alpha1.ProtocolVersion{},
-		HeartbeatIntervalSeconds:  0,
+		SessionId:                  o.Session.ID,
+		SelectedProtocol:           &agentv1alpha1.ProtocolVersion{},
+		HeartbeatIntervalSeconds:   0,
 		StateReportIntervalSeconds: 0,
-		ServerTimeUnix:            0,
+		ServerTimeUnix:             0,
 	}
 }
 
@@ -259,9 +259,9 @@ func DesiredStateFromProto(p *agentv1alpha1.DesiredState) *DesiredState {
 		podmanPlays[i] = *PodmanPlayFromProto(pp)
 	}
 	return &DesiredState{
-		Type:      MessageTypeDesiredState,
-		Host:      p.GetHost(),
-		Revision:  int64(p.GetRevision()),
+		Type:        MessageTypeDesiredState,
+		Host:        p.GetHost(),
+		Revision:    int64(p.GetRevision()),
 		PodmanPlays: podmanPlays,
 	}
 }
@@ -295,11 +295,11 @@ func (d *DesiredStateUpdate) ToProto() *agentv1alpha1.DesiredStateUpdate {
 		protoAdditions[i] = a.ToProto()
 	}
 	return &agentv1alpha1.DesiredStateUpdate{
-		SessionId:  d.SessionID,
-		Host:       d.Host,
-		Revision:   uint64(d.Revision),
-		Additions:  protoAdditions,
-		Deletions:  d.Deletions,
+		SessionId: d.SessionID,
+		Host:      d.Host,
+		Revision:  uint64(d.Revision),
+		Additions: protoAdditions,
+		Deletions: d.Deletions,
 	}
 }
 

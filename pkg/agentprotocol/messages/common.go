@@ -194,11 +194,11 @@ func WorkloadResultFromProto(p *agentv1alpha1.WorkloadResult) *WorkloadResult {
 	}
 	identity := p.GetIdentity()
 	return &WorkloadResult{
-		UID:        identity.GetUid(),
-		Namespace:  identity.GetNamespace(),
-		Name:       identity.GetName(),
-		Generation: identity.GetGeneration(),
-		Phase:      p.GetPhase(),
+		UID:            identity.GetUid(),
+		Namespace:      identity.GetNamespace(),
+		Name:           identity.GetName(),
+		Generation:     identity.GetGeneration(),
+		Phase:          p.GetPhase(),
 		ManifestDigest: p.GetManifestDigest(),
 	}
 }

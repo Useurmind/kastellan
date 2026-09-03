@@ -3,8 +3,8 @@ package proto_test
 import (
 	"testing"
 
-	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
 	agentv1alpha1 "github.com/kastellan/kastellan/api/proto/kastellan/agent/v1alpha1"
+	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
 )
 
 func TestContainerInfoToProto(t *testing.T) {
@@ -70,11 +70,11 @@ func TestContainerInfoRoundTrip(t *testing.T) {
 
 func TestWorkloadResultToProto(t *testing.T) {
 	original := &messages.WorkloadResult{
-		UID:        "workload-uid-123",
-		Namespace:  "default",
-		Name:       "test-workload",
-		Generation: 1,
-		Phase:      "Running",
+		UID:            "workload-uid-123",
+		Namespace:      "default",
+		Name:           "test-workload",
+		Generation:     1,
+		Phase:          "Running",
 		ManifestDigest: "sha256:abc123",
 	}
 	original.Runtime.Containers = []messages.ContainerInfo{

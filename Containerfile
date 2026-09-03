@@ -17,7 +17,9 @@ RUN go install github.com/go-delve/delve/cmd/dlv@latest && \
     go install golang.org/x/tools/cmd/goimports@latest && \
     go install golang.org/x/lint/golint@latest && \
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
-    go install golang.org/x/tools/cmd/deadcode@latest
+    go install golang.org/x/tools/cmd/deadcode@latest && \
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # Install kubebuilder
 RUN curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH) && \
@@ -59,6 +61,8 @@ COPY --from=builder /go/bin/goimports /usr/local/bin/goimports
 COPY --from=builder /go/bin/golint /usr/local/bin/golint
 COPY --from=builder /go/bin/golangci-lint /usr/local/bin/golangci-lint
 COPY --from=builder /go/bin/deadcode /usr/local/bin/deadcode
+COPY --from=builder /go/bin/protoc-gen-go /usr/local/bin/protoc-gen-go
+COPY --from=builder /go/bin/protoc-gen-go-grpc /usr/local/bin/protoc-gen-go-grpc
 
 # Copy protobuf compiler
 COPY --from=builder /usr/local/bin/protoc /usr/local/bin/protoc

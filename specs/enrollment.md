@@ -16,7 +16,7 @@ After that it should just wait.
 
 ## Operator Server
 
-The Operator Server should listen for enrollment requests and if one is received it should update the status of the  external host that the agent is managing.
+The Operator Server should listen for enrollment requests and if one is received it should update the status of the external host that the agent is managing.
 
 The status should look like this:
 

@@ -52,11 +52,11 @@ func (s *GrpcServer) handleMessage(msg *agentv1alpha1.ProtocolMessage) (*agentv1
 // handleAgentHello processes AgentHello messages.
 func (s *GrpcServer) handleAgentHello(hello *agentv1alpha1.AgentHello) (*agentv1alpha1.ProtocolMessage, error) {
 	response := &agentv1alpha1.OperatorHello{
-		SessionId:              "session-" + hello.AgentId,
-		SelectedProtocol:       &agentv1alpha1.ProtocolVersion{Major: 1, Minor: 0},
-		HeartbeatIntervalSeconds: 30,
+		SessionId:                  "session-" + hello.AgentId,
+		SelectedProtocol:           &agentv1alpha1.ProtocolVersion{Major: 1, Minor: 0},
+		HeartbeatIntervalSeconds:   30,
 		StateReportIntervalSeconds: 60,
-		ServerTimeUnix:         0,
+		ServerTimeUnix:             0,
 	}
 
 	return &agentv1alpha1.ProtocolMessage{

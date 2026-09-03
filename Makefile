@@ -14,7 +14,7 @@ endif
 # Be aware that the target commands are only tested with Docker which is
 # scaffolded by default. However, you might want to replace it to use other
 # tools. (i.e. podman)
-CONTAINER_TOOL ?= docker
+CONTAINER_TOOL ?= podman
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -114,6 +114,15 @@ test-e2e: setup-test-e2e manifests generate fmt vet ## Run the e2e tests. Expect
 cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests
 	@$(KIND) delete cluster --name $(KIND_CLUSTER)
 
+.PHONY: cleanup-kind-cluster
+cleanup-kind-cluster: ## Tear down the kind cluster
+	@$(KIND) delete cluster --name kastellan
+
+.PHONY: kind-cluster-status
+kind-cluster-status: ## Show the status of the kind cluster
+	@$(KIND) get clusters | grep -q "kastellan" && echo "Cluster 'kastellan' exists" || echo "Cluster 'kastellan' does not exist"
+	@$(KIND) get kubeconfig --name kastellan --internal 2>/dev/null | head -5 || echo "Unable to get kubeconfig"
+
 .PHONY: lint
 lint: golangci-lint proto-lint ## Run golangci-lint linter and proto linter
 	"$(GOLANGCI_LINT)" run
@@ -143,6 +152,79 @@ proto-lint-fix: ## Run protoc-lint linter and attempt fixes
 		--proto_path=api/proto \
 		--lint_out=api/proto \
 		api/proto/kastellan/agent/v1alpha1/agent.proto
+
+##@ Kind Cluster
+
+.PHONY: setup-kind-cluster
+setup-kind-cluster: ## Create or recreate the kind cluster for development
+	@command -v $(KIND) >/dev/null 2>&1 || { \
+		echo "Kind is not installed. Please install Kind manually."; \
+		exit 1; \
+	}
+	@echo "Deleting existing kind cluster 'kastellan' if it exists..."
+	@$(KIND) delete cluster --name kastellan 2>/dev/null || true
+	@echo "Creating kind cluster 'kastellan'..."
+	@$(KIND) create cluster --name kastellan
+# 	@echo "Extracting kubeconfig..."
+# 	@$(KIND) get kubeconfig --name kastellan > $(KIND_MANIFEST)
+# 	@echo "Merging kubeconfig into $$KUBECONFIG or $$HOME/.kube/config..."
+# 	@export KUBECONFIG_MERGED="$$(cat "$$KUBECONFIG" 2>/dev/null || cat "$$HOME/.kube/config" 2>/dev/null || true)"; \
+# 	if [ -n "$$KUBECONFIG_MERGED" ]; then \
+# 		export KUBECONFIG="$$(mktemp)"; \
+# 		echo "$$KUBECONFIG_MERGED" > "$$KUBECONFIG"; \
+# 		kubectl config view --raw --flatten | kubectl config view --merge="$(KIND_MANIFEST)" --raw > "$$KUBECONFIG.tmp" 2>/dev/null && mv "$$KUBECONFIG.tmp" "$$KUBECONFIG" || \
+# 		{ cat "$(KIND_MANIFEST)" >> "$$KUBECONFIG"; echo "Kubeconfig appended manually"; }; \
+# 	else \
+# 		export KUBECONFIG=$(KIND_MANIFEST); \
+# 	fi; \
+# 	kubectl config use-context kind-kastellan 2>/dev/null || \
+# 	awk 'BEGIN{found=0} /^current-context:/{if(!found){print "current-context: kast-kind"; found=1} else{next}} {print}' "$$KUBECONFIG" > "$$KUBECONFIG.tmp" && mv "$$KUBECONFIG.tmp" "$$KUBECONFIG"; \
+# 	echo "Kubeconfig merged successfully."
+# 	@rm -f $(KIND_MANIFEST)
+# 	@echo "Kind cluster 'kastellan' is ready. Use 'kubectl --context kast-kind' to access."
+
+.PHONY: deploy-operator
+deploy-operator: manifests generate kustomize docker-build ## Build and deploy the operator to the kind cluster
+	@command -v $(KIND) >/dev/null 2>&1 || { \
+		echo "Kind is not installed. Please install Kind manually."; \
+		exit 1; \
+	}
+	@command -v $(CONTAINER_TOOL) >/dev/null 2>&1 || { \
+		echo "Container tool ($(CONTAINER_TOOL)) is not installed. Please install it."; \
+		exit 1; \
+	}
+	@echo "Checking if kind cluster 'kastellan' exists..."
+	@if ! $(KIND) get clusters | grep -q "kastellan"; then \
+		echo "Error: Kind cluster 'kastellan' does not exist. Run 'make setup-kind-cluster' first."; \
+		exit 1; \
+	fi
+	@echo "Loading docker image into kind cluster..."
+	@$(CONTAINER_TOOL) tag ${IMG} controller:latest 2>/dev/null || true
+	@$(KIND) load docker-image controller:latest --name kastellan
+	@echo "Updating deployment image to controller:latest..."
+	@cd config/manager && "$(KUSTOMIZE)" edit set image controller=controller:latest
+	@echo "Deploying operator to kind cluster..."
+	@cd config/manager && "$(KUSTOMIZE)" edit set image controller=controller:latest
+	@"$(KUSTOMIZE)" build config/default | "$(KUBECTL)" apply -f -
+	@echo "Operator deployed successfully. Use 'kubectl get pods -n kastellan-system' to check status."
+
+.PHONY: undeploy-operator
+undeploy-operator: ## Undeploy the operator from the kind cluster
+	@command -v $(KUBECTL) >/dev/null 2>&1 || { \
+		echo "kubectl is not installed. Please install kubectl."; \
+		exit 1; \
+	}
+	@echo "Undeploying operator from kind cluster..."
+	@"$(KUSTOMIZE)" build config/default | "$(KUBECTL)" delete --ignore-not-found=true -f -
+	@echo "Operator undeployed successfully."
+
+.PHONY: kind-dev-setup
+kind-dev-setup: setup-kind-cluster deploy-operator ## Set up kind cluster and deploy operator (convenience target)
+
+.PHONY: kind-dev-teardown
+kind-dev-teardown: undeploy-operator cleanup-kind-cluster ## Undeploy operator and tear down kind cluster (convenience target)
+
+.PHONY: lint
 
 ##@ Build
 
@@ -252,6 +334,11 @@ $(KUSTOMIZE): $(LOCALBIN)
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
 	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,$(CONTROLLER_TOOLS_VERSION))
+
+.PHONY: protoc-gen-go
+protoc-gen-go: 
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 .PHONY: setup-envtest
 setup-envtest: envtest ## Download the binaries required for ENVTEST in the local bin directory.

@@ -292,9 +292,9 @@ func AgentHelloFromProto(p *agentv1alpha1.AgentHello) *AgentHello {
 // ToProto converts HostInventory to proto HostInventory.
 func (h *HostInventory) ToProto() *agentv1alpha1.HostInventory {
 	return &agentv1alpha1.HostInventory{
-		SessionId: h.SessionID,
-		Host:      &agentv1alpha1.HostInfo{},
-		Podman:    &agentv1alpha1.PodmanInfo{},
+		SessionId:    h.SessionID,
+		Host:         &agentv1alpha1.HostInfo{},
+		Podman:       &agentv1alpha1.PodmanInfo{},
 		Capabilities: h.Capabilities,
 	}
 }
@@ -305,8 +305,8 @@ func HostInventoryFromProto(p *agentv1alpha1.HostInventory) *HostInventory {
 		return nil
 	}
 	return &HostInventory{
-		Type:       MessageTypeHostInventory,
-		SessionID:  p.GetSessionId(),
+		Type:         MessageTypeHostInventory,
+		SessionID:    p.GetSessionId(),
 		Capabilities: p.GetCapabilities(),
 	}
 }
@@ -374,7 +374,7 @@ func (w *WorkloadStatus) ToProto() *agentv1alpha1.WorkloadStatus {
 			Name:       w.Name,
 			Generation: w.Generation,
 		},
-		Phase: w.Phase,
+		Phase:   w.Phase,
 		Runtime: &agentv1alpha1.RuntimeInformation{},
 	}
 }
