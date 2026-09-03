@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
+	agentv1alpha1 "github.com/kastellan/kastellan/api/proto/kastellan/agent/v1alpha1"
 	"github.com/kastellan/kastellan/pkg/agentprotocol/messages"
 )
 
@@ -40,6 +41,9 @@ type Client struct {
 	cancel context.CancelFunc
 	mu     sync.RWMutex
 
+	// gRPC stream for bidirectional communication
+	grpcStream grpc.BidiStreamingClient[agentv1alpha1.ProtocolMessage, agentv1alpha1.ProtocolMessage]
+
 	// Reconnection settings
 	reconnectDelay time.Duration
 	maxDelay       time.Duration
@@ -52,6 +56,10 @@ type Client struct {
 	// Status reporting
 	statusStop chan struct{}
 	statusWG   sync.WaitGroup
+
+	// Message channels
+	outgoingMsgs chan agentv1alpha1.ProtocolMessage
+	incomingMsgs chan agentv1alpha1.ProtocolMessage
 
 	// Event channels
 	connectedCh    chan struct{}
@@ -78,6 +86,8 @@ func New(serverAddress, agentID, agentVersion, hostName, hostHostname string) *C
 		connectedCh:       make(chan struct{}, 1),
 		disconnectedCh:    make(chan struct{}, 1),
 		errorCh:           make(chan error, 100),
+		outgoingMsgs:      make(chan agentv1alpha1.ProtocolMessage, 100),
+		incomingMsgs:      make(chan agentv1alpha1.ProtocolMessage, 100),
 	}
 }
 
@@ -194,19 +204,11 @@ func (c *Client) connectOnce(ctx context.Context) error {
 	c.mu.Unlock()
 
 	// Create bidirectional stream
-	stream, err := c.createStream(ctx, conn)
+	_, err = c.createStream(ctx, conn)
 	if err != nil {
 		conn.Close()
 		return fmt.Errorf("failed to create stream: %w", err)
 	}
-
-	c.mu.Lock()
-	c.stream = stream
-	c.mu.Unlock()
-
-	// Start heartbeat and status goroutines
-	c.startHeartbeat(ctx)
-	c.startStatusReporting(ctx)
 
 	return nil
 }
@@ -265,81 +267,96 @@ func (c *Client) createStream(ctx context.Context, conn *grpc.ClientConn) (grpc.
 
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	// Create stream (this would use the actual gRPC service)
-	// For now, we'll use a placeholder
-	stream, err := conn.NewStream(ctx, &grpc.StreamDesc{}, "/kastellan.AgentService/Connect")
+	// Create gRPC client
+	client := agentv1alpha1.NewAgentProtocolClient(conn)
+
+	// Create bidirectional stream
+	grpcStream, err := client.Connect(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return stream, nil
+	c.mu.Lock()
+	c.grpcStream = grpcStream
+	c.mu.Unlock()
+
+	// Start message send/receive goroutines
+	go c.sendMessages(ctx)
+	go c.receiveMessages(ctx)
+
+	return nil, nil
 }
 
-// startHeartbeat starts the heartbeat goroutine.
-func (c *Client) startHeartbeat(ctx context.Context) {
-	c.heartbeatStop = make(chan struct{})
-	c.heartbeatWG.Add(1)
+// sendMessages sends messages from the outgoing channel to the stream.
+func (c *Client) sendMessages(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-c.outgoingMsgs:
+			c.mu.RLock()
+			stream := c.grpcStream
+			c.mu.RUnlock()
 
-	go func() {
-		defer c.heartbeatWG.Done()
-
-		ticker := time.NewTicker(c.heartbeatInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-c.heartbeatStop:
-				return
-			case <-ticker.C:
-				if err := c.sendHeartbeat(ctx); err != nil {
-					fmt.Printf("Failed to send heartbeat: %v\n", err)
-					// Don't stop on heartbeat failure
+			if stream != nil {
+				if err := stream.Send(&msg); err != nil {
+					c.errorCh <- fmt.Errorf("failed to send message: %w", err)
+					return
 				}
 			}
 		}
-	}()
-}
-
-// sendHeartbeat sends a heartbeat message to the operator.
-func (c *Client) sendHeartbeat(ctx context.Context) error {
-	heartbeat := &messages.Heartbeat{
-		Type:      messages.MessageTypeHeartbeat,
-		SessionID: c.getSessionID(),
-		Timestamp: time.Now(),
 	}
-
-	// Send heartbeat through the stream
-	// This would use the actual gRPC message sending mechanism
-	return c.sendMessage(ctx, heartbeat)
 }
 
-// startStatusReporting starts the status reporting goroutine.
-func (c *Client) startStatusReporting(ctx context.Context) {
-	c.statusStop = make(chan struct{})
-	c.statusWG.Add(1)
+// receiveMessages receives messages from the stream and puts them in the incoming channel.
+func (c *Client) receiveMessages(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			c.mu.RLock()
+			stream := c.grpcStream
+			c.mu.RUnlock()
 
-	go func() {
-		defer c.statusWG.Done()
+			if stream == nil {
+				time.Sleep(10 * time.Millisecond)
+				continue
+			}
 
-		// Status reporting loop
-		for {
+			msg := agentv1alpha1.ProtocolMessage{}
+			if err := stream.RecvMsg(&msg); err != nil {
+				c.errorCh <- fmt.Errorf("failed to receive message: %w", err)
+				return
+			}
+
 			select {
 			case <-ctx.Done():
 				return
-			case <-c.statusStop:
-				return
+			case c.incomingMsgs <- msg:
 			}
 		}
-	}()
+	}
 }
 
-// sendMessage sends a message through the stream (stub).
-func (c *Client) sendMessage(ctx context.Context, msg interface{}) error {
-	// gRPC streaming is not fully implemented yet
-	// This is a stub that returns nil
-	return nil
+// SendMessage sends a protobuf message to the server.
+func (c *Client) SendMessage(ctx context.Context, msg *agentv1alpha1.ProtocolMessage) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case c.outgoingMsgs <- *msg:
+		return nil
+	}
+}
+
+// ReceiveMessage receives a protobuf message from the server.
+func (c *Client) ReceiveMessage(ctx context.Context) (*agentv1alpha1.ProtocolMessage, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case msg := <-c.incomingMsgs:
+		return &msg, nil
+	}
 }
 
 // getSessionID returns the current session ID.
@@ -369,14 +386,6 @@ func (c *Client) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Stop heartbeat and status goroutines
-	if c.heartbeatStop != nil {
-		close(c.heartbeatStop)
-	}
-	if c.statusStop != nil {
-		close(c.statusStop)
-	}
-
 	// Wait for goroutines to finish
 	c.heartbeatWG.Wait()
 	c.statusWG.Wait()
@@ -387,8 +396,8 @@ func (c *Client) Close() error {
 	}
 
 	// Close stream and connection
-	if c.stream != nil {
-		c.stream.CloseSend()
+	if c.grpcStream != nil {
+		// gRPC stream closes on connection close
 	}
 	if c.conn != nil {
 		c.conn.Close()
@@ -410,4 +419,14 @@ func (c *Client) GetDisconnectedChannel() <-chan struct{} {
 // GetErrorChannel returns a channel for receiving errors.
 func (c *Client) GetErrorChannel() <-chan error {
 	return c.errorCh
+}
+
+// GetOutgoingMessages returns the outgoing message channel.
+func (c *Client) GetOutgoingMessages() chan agentv1alpha1.ProtocolMessage {
+	return c.outgoingMsgs
+}
+
+// GetIncomingMessages returns the incoming message channel.
+func (c *Client) GetIncomingMessages() chan agentv1alpha1.ProtocolMessage {
+	return c.incomingMsgs
 }
