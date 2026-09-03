@@ -58,8 +58,8 @@ type Client struct {
 	statusWG   sync.WaitGroup
 
 	// Message channels
-	outgoingMsgs chan agentv1alpha1.ProtocolMessage
-	incomingMsgs chan agentv1alpha1.ProtocolMessage
+	outgoingMsgs chan *agentv1alpha1.ProtocolMessage
+	incomingMsgs chan *agentv1alpha1.ProtocolMessage
 
 	// Event channels
 	connectedCh    chan struct{}
@@ -86,8 +86,8 @@ func New(serverAddress, agentID, agentVersion, hostName, hostHostname string) *C
 		connectedCh:       make(chan struct{}, 1),
 		disconnectedCh:    make(chan struct{}, 1),
 		errorCh:           make(chan error, 100),
-		outgoingMsgs:      make(chan agentv1alpha1.ProtocolMessage, 100),
-		incomingMsgs:      make(chan agentv1alpha1.ProtocolMessage, 100),
+		outgoingMsgs:      make(chan *agentv1alpha1.ProtocolMessage, 100),
+		incomingMsgs:      make(chan *agentv1alpha1.ProtocolMessage, 100),
 	}
 }
 
@@ -293,13 +293,13 @@ func (c *Client) sendMessages(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case msg := <-c.outgoingMsgs:
+		case msgPtr := <-c.outgoingMsgs:
 			c.mu.RLock()
 			stream := c.grpcStream
 			c.mu.RUnlock()
 
 			if stream != nil {
-				if err := stream.Send(&msg); err != nil {
+				if err := stream.Send(msgPtr); err != nil {
 					c.errorCh <- fmt.Errorf("failed to send message: %w", err)
 					return
 				}
@@ -333,7 +333,7 @@ func (c *Client) receiveMessages(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
-			case c.incomingMsgs <- msg:
+			case c.incomingMsgs <- &msg:
 			}
 		}
 	}
@@ -344,7 +344,7 @@ func (c *Client) SendMessage(ctx context.Context, msg *agentv1alpha1.ProtocolMes
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case c.outgoingMsgs <- *msg:
+	case c.outgoingMsgs <- msg:
 		return nil
 	}
 }
@@ -355,7 +355,7 @@ func (c *Client) ReceiveMessage(ctx context.Context) (*agentv1alpha1.ProtocolMes
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case msg := <-c.incomingMsgs:
-		return &msg, nil
+		return msg, nil
 	}
 }
 
@@ -422,11 +422,11 @@ func (c *Client) GetErrorChannel() <-chan error {
 }
 
 // GetOutgoingMessages returns the outgoing message channel.
-func (c *Client) GetOutgoingMessages() chan agentv1alpha1.ProtocolMessage {
+func (c *Client) GetOutgoingMessages() chan *agentv1alpha1.ProtocolMessage {
 	return c.outgoingMsgs
 }
 
 // GetIncomingMessages returns the incoming message channel.
-func (c *Client) GetIncomingMessages() chan agentv1alpha1.ProtocolMessage {
+func (c *Client) GetIncomingMessages() chan *agentv1alpha1.ProtocolMessage {
 	return c.incomingMsgs
 }

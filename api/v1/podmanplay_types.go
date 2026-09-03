@@ -36,6 +36,14 @@ type PodmanPlaySpec struct {
 	Foo *string `json:"foo,omitempty"`
 }
 
+// PodmanPlayHostStatus defines the status of a host in the PodmanPlay.
+type PodmanPlayHostStatus struct {
+	Name               string      `json:"name"`
+	Phase              string      `json:"phase"`
+	AppliedGeneration  int64       `json:"appliedGeneration"`
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+}
+
 // PodmanPlayStatus defines the observed state of PodmanPlay.
 type PodmanPlayStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -43,6 +51,14 @@ type PodmanPlayStatus struct {
 
 	// For Kubernetes API conventions, see:
 	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
+	// observedGeneration is the most recent generation observed by the controller.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// hosts represents the status of hosts in the PodmanPlay.
+	// +optional
+	Hosts []PodmanPlayHostStatus `json:"hosts,omitempty"`
 
 	// conditions represent the current state of the PodmanPlay resource.
 	// Each condition has a unique type and reflects the status of a specific aspect of the resource.

@@ -116,6 +116,34 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              hosts:
+                description: hosts represents the status of hosts in the PodmanPlay.
+                items:
+                  description: PodmanPlayHostStatus defines the status of a host in
+                    the PodmanPlay.
+                  properties:
+                    appliedGeneration:
+                      format: int64
+                      type: integer
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    name:
+                      type: string
+                    phase:
+                      type: string
+                  required:
+                  - appliedGeneration
+                  - lastTransitionTime
+                  - name
+                  - phase
+                  type: object
+                type: array
+              observedGeneration:
+                description: observedGeneration is the most recent generation observed
+                  by the controller.
+                format: int64
+                type: integer
             type: object
         required:
         - spec

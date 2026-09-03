@@ -181,13 +181,12 @@ func main() {
 
 	// Initialize server components
 	heartbeatProcessor := server.NewHeartbeatProcessor()
-	statusProcessor := server.NewStatusProcessor()
 
 	// Initialize controllers
 	if err := (&controller.ExternalHostReconciler{
 		Client:          mgr.GetClient(),
 		Scheme:          mgr.GetScheme(),
-		heartbeatServer: heartbeatProcessor,
+		HeartbeatServer: heartbeatProcessor,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "externalhost")
 		os.Exit(1)
@@ -207,19 +206,12 @@ func main() {
 		os.Exit(1)
 	}
 	if err := (&controller.PodmanPlayReconciler{
-		Client:          mgr.GetClient(),
-		Scheme:          mgr.GetScheme(),
-		statusProcessor: statusProcessor,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "podmanplay")
 		os.Exit(1)
 	}
-
-	// Initialize the agent protocol server
-	agentServer := server.NewServer(&server.ServerConfig{
-		HeartbeatProcessor: heartbeatProcessor,
-		StatusProcessor:    statusProcessor,
-	})
 
 	// TODO: Start the agent gRPC server in a goroutine
 	// This would be started on a separate port (e.g., :8080) for agent connections

@@ -38,12 +38,12 @@ const (
 type ExternalHostReconciler struct {
 	client.Client
 	Scheme          *runtime.Scheme
-	heartbeatServer *server.HeartbeatProcessor
+	HeartbeatServer *server.HeartbeatProcessor
 }
 
 // SetHeartbeatServer sets the heartbeat server for status updates.
 func (r *ExternalHostReconciler) SetHeartbeatServer(hb *server.HeartbeatProcessor) {
-	r.heartbeatServer = hb
+	r.HeartbeatServer = hb
 }
 
 // +kubebuilder:rbac:groups=kastellan.useurmind.de,resources=externalhosts,verbs=get;list;watch;create;update;patch;delete
@@ -68,9 +68,9 @@ func (r *ExternalHostReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Update status from heartbeat data if available
-	if r.heartbeatServer != nil {
+	if r.HeartbeatServer != nil {
 		sessionID := req.Name
-		if state, exists := r.heartbeatServer.GetSessionState(sessionID); exists {
+		if state, exists := r.HeartbeatServer.GetSessionState(sessionID); exists {
 			log.Info("Updating ExternalHost status from heartbeat", "host", req.Name)
 
 			now := metav1.Now()
