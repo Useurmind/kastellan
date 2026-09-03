@@ -1,0 +1,360 @@
+syntax = "proto3";
+
+package kastellan.agent.v1alpha1;
+
+option go_package = "github.com/kastellan/kastellan/pkg/agentprotocol/server;server";
+
+// AgentService provides bidirectional streaming for agent communication.
+service AgentService {
+  // Connect establishes a bidirectional stream for agent communication.
+  rpc Connect(stream AgentMessage) returns (stream OperatorMessage);
+}
+
+// AgentMessage represents messages sent from the agent to the operator.
+message AgentMessage {
+  oneof payload {
+    AgentHello hello = 1;
+    Heartbeat heartbeat = 2;
+    HostInventory inventory = 3;
+    ReconcileResult reconcile_result = 4;
+    AgentShutdown shutdown = 5;
+  }
+}
+
+// OperatorMessage represents messages sent from the operator to the agent.
+message OperatorMessage {
+  oneof payload {
+    OperatorHello hello = 1;
+    DesiredState desired_state = 2;
+    ReconcileRequest reconcile_request = 3;
+    OperatorShutdown shutdown = 4;
+  }
+}
+
+// AgentHello is the initial connection message from the agent.
+message AgentHello {
+  // Agent identification
+  string agent_id = 1;
+  string host_name = 2;
+  string agent_version = 3;
+
+  // Protocol versions supported by the agent
+  repeated ProtocolVersion supported_protocols = 4;
+
+  // Runtime information
+  RuntimeInformation runtime = 5;
+
+  // Last session ID (for reconnection)
+  string last_session_id = 6;
+
+  // Last received and applied revisions
+  uint64 last_received_revision = 7;
+  uint64 last_applied_revision = 8;
+}
+
+// OperatorHello is the server's response to AgentHello.
+message OperatorHello {
+  // Session identification
+  string session_id = 1;
+
+  // Negotiated protocol version
+  ProtocolVersion selected_protocol = 2;
+
+  // Configuration
+  uint32 heartbeat_interval_seconds = 3;
+  uint32 state_report_interval_seconds = 4;
+
+  // Server time
+  int64 server_time_unix = 5;
+}
+
+// EnrollmentRequest is sent by the agent during initial enrollment.
+message EnrollmentRequest {
+  // Enrollment token (one-time use)
+  string token = 1;
+
+  // Agent information
+  string agent_id = 2;
+  string agent_version = 3;
+
+  // Host information
+  string host_name = 4;
+  string host_hostname = 5;
+}
+
+// EnrollmentResponse is sent by the operator in response to EnrollmentRequest.
+message EnrollmentResponse {
+  // Success indicates if enrollment was successful
+  bool success = 1;
+
+  // Error message if enrollment failed
+  string error = 2;
+
+  // Agent identity (certificate and key)
+  string certificate = 3;
+  string private_key = 4;
+  string ca_bundle = 5;
+
+  // Session ID for subsequent connections
+  string session_id = 6;
+}
+
+// Heartbeat is a periodic status update from the agent.
+message Heartbeat {
+  // Session ID
+  string session_id = 1;
+
+  // Timestamp of the message
+  int64 timestamp_unix = 2;
+
+  // Last received and applied revisions
+  uint64 last_received_revision = 3;
+  uint64 last_applied_revision = 4;
+
+  // Runtime health
+  RuntimeHealth runtime = 5;
+
+  // Workload counts
+  uint32 assigned_workloads = 6;
+  uint32 ready_workloads = 7;
+  uint32 failed_workloads = 8;
+}
+
+// HostInventory is sent by the agent to report host capabilities.
+message HostInventory {
+  // Session ID
+  string session_id = 1;
+
+  // Timestamp of the message
+  int64 timestamp_unix = 2;
+
+  // Host information
+  string hostname = 3;
+  string operating_system = 4;
+  string architecture = 5;
+
+  // Runtime information
+  RuntimeInformation runtime = 6;
+
+  // Host resources
+  uint64 total_memory_bytes = 7;
+  uint32 logical_cpus = 8;
+
+  // Local workloads
+  repeated LocalWorkload workloads = 9;
+}
+
+// LocalWorkload represents a workload running on the host.
+message LocalWorkload {
+  // Resource identity
+  string api_version = 1;
+  string kind = 2;
+  string namespace = 3;
+  string name = 4;
+  string uid = 5;
+  int64 generation = 6;
+
+  // Manifest digest
+  string manifest_digest = 7;
+
+  // Runtime ID
+  string runtime_id = 8;
+
+  // Workload phase
+  WorkloadPhase phase = 9;
+}
+
+// ReconcileResult reports the result of workload reconciliation.
+message ReconcileResult {
+  // Session ID
+  string session_id = 1;
+
+  // Desired state revision
+  uint64 revision = 2;
+
+  // Workload results
+  repeated WorkloadResult workloads = 3;
+}
+
+// WorkloadResult represents the result for a single workload.
+message WorkloadResult {
+  // Resource identity
+  string api_version = 1;
+  string kind = 2;
+  string namespace = 3;
+  string name = 4;
+  string uid = 5;
+  int64 generation = 6;
+
+  // Manifest digest
+  string manifest_digest = 7;
+
+  // Workload phase
+  WorkloadPhase phase = 8;
+
+  // Runtime resources
+  repeated RuntimeResource runtime_resources = 9;
+
+  // Error details
+  ErrorDetail error = 10;
+}
+
+// WorkloadStatus reports the status of a single workload.
+message WorkloadStatus {
+  // Session ID
+  string session_id = 1;
+
+  // Timestamp of the message
+  int64 timestamp_unix = 2;
+
+  // Resource identity
+  string api_version = 3;
+  string kind = 4;
+  string namespace = 5;
+  string name = 6;
+  string uid = 7;
+  int64 generation = 8;
+
+  // Workload phase
+  WorkloadPhase phase = 9;
+
+  // Runtime information
+  RuntimeResource pod = 10;
+  repeated RuntimeResource containers = 11;
+}
+
+// CertificateRotationRequest requests certificate rotation.
+message CertificateRotationRequest {
+  // Session ID
+  string session_id = 1;
+
+  // Timestamp of the message
+  int64 timestamp_unix = 2;
+}
+
+// DesiredState is sent by the operator to deliver workload assignments.
+message DesiredState {
+  // Session ID
+  string session_id = 1;
+
+  // Revision number
+  uint64 revision = 2;
+
+  // PodmanPlay assignments
+  repeated PodmanPlayAssignment podman_plays = 3;
+}
+
+// PodmanPlayAssignment represents a workload assignment.
+message PodmanPlayAssignment {
+  // Resource identity
+  string api_version = 1;
+  string kind = 2;
+  string namespace = 3;
+  string name = 4;
+  string uid = 5;
+  int64 generation = 6;
+
+  // Full YAML manifest
+  bytes manifest = 7;
+
+  // Manifest digest
+  string manifest_digest = 8;
+
+  // Update strategy
+  UpdateStrategy update_strategy = 9;
+}
+
+// ReconcileRequest requests reconciliation.
+message ReconcileRequest {
+  // Session ID
+  string session_id = 1;
+
+  // Scope of the request
+  ReconcileRequestScope scope = 2;
+  string resource_uid = 3;
+}
+
+// CertificateRotationResponse is sent by the operator in response to certificate rotation request.
+message CertificateRotationResponse {
+  // Session ID
+  string session_id = 1;
+
+  // Success indicates if rotation was successful
+  bool success = 2;
+
+  // Error message if rotation failed
+  string error = 3;
+
+  // New certificate and key
+  string certificate = 4;
+  string private_key = 5;
+  string ca_bundle = 6;
+}
+
+// ConnectionClose is sent by the operator to close the connection.
+message ConnectionClose {
+  // Session ID
+  string session_id = 1;
+
+  // Reason for closing
+  string reason = 2;
+}
+
+// ProtocolVersion represents a protocol version.
+message ProtocolVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+// RuntimeInformation represents runtime capabilities.
+message RuntimeInformation {
+  string name = 1;
+  string version = 2;
+  repeated string capabilities = 3;
+}
+
+// RuntimeHealth represents runtime health status.
+message RuntimeHealth {
+  bool available = 1;
+  string message = 2;
+}
+
+// RuntimeResource represents a runtime resource.
+message RuntimeResource {
+  string type = 1;
+  string name = 2;
+  string id = 3;
+  string state = 4;
+}
+
+// ErrorDetail represents an error with retry information.
+message ErrorDetail {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+}
+
+// WorkloadPhase represents the phase of a workload.
+enum WorkloadPhase {
+  WORKLOAD_PHASE_UNSPECIFIED = 0;
+  WORKLOAD_PHASE_PENDING = 1;
+  WORKLOAD_PHASE_APPLYING = 2;
+  WORKLOAD_PHASE_READY = 3;
+  WORKLOAD_PHASE_FAILED = 4;
+  WORKLOAD_PHASE_DELETING = 5;
+  WORKLOAD_PHASE_ABSENT = 6;
+}
+
+// UpdateStrategy represents how a workload should be updated.
+enum UpdateStrategy {
+  UPDATE_STRATEGY_UNSPECIFIED = 0;
+  UPDATE_STRATEGY_REPLACE = 1;
+}
+
+// ReconcileRequestScope represents the scope of a reconcile request.
+enum ReconcileRequestScope {
+  RECONCILE_REQUEST_SCOPE_UNSPECIFIED = 0;
+  RECONCILE_REQUEST_SCOPE_ALL = 1;
+  RECONCILE_REQUEST_SCOPE_WORKLOAD = 2;
+  RECONCILE_REQUEST_SCOPE_INVENTORY = 3;
+}

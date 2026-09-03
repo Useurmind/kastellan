@@ -1,17 +1,18 @@
 # Agent Protocol Package
 
-This package provides the agent-side connection protocol for communicating with the Kastellan Operator.
+This package provides the connection protocol for communicating between the Kastellan Agent and the Kastellan Operator.
 
 ## Overview
 
-The agent protocol package implements the communication protocol between the Kastellan Agent and the Kastellan Operator. It provides:
+The agent protocol package implements the bidirectional gRPC streaming protocol for agent communication. It provides:
 
-- Protocol message structures (JSON-based)
-- gRPC client for bidirectional streaming
+- Protocol message structures (JSON and protobuf-based)
+- gRPC client for agents (outbound connections)
+- gRPC server for operator (incoming connections)
 - Connection management with reconnection logic
-- Authentication (mTLS with enrollment tokens)
+- Authentication (mTLS)
 - Heartbeat mechanism
-- Status reporting
+- Workload status reporting
 
 ## Package Structure
 
@@ -21,13 +22,23 @@ pkg/agentprotocol/
 │   ├── types.go       # Message type definitions
 │   ├── json.go        # JSON serialization
 │   └── messages_test.go
-├── client/            # Client implementation
+├── client/            # Agent client implementation (outbound)
 │   ├── client.go      # Main client
 │   ├── connection.go  # Connection management
 │   ├── reconnect.go   # Reconnection logic
 │   ├── heartbeat.go   # Heartbeat handling
 │   ├── status.go      # Status reporting
 │   └── client_test.go
+├── server/            # Operator server implementation (incoming)
+│   ├── server.go      # Main server
+│   ├── session.go     # Session management
+│   ├── handshake.go   # Handshake processing
+│   ├── desiredstate.go # Desired state provider
+│   ├── heartbeat.go   # Heartbeat processing
+│   ├── status.go      # Status processing
+│   ├── gateway.go     # gRPC gateway
+│   ├── errors.go      # Server errors
+│   └── server_test.go
 ├── errors.go          # Error types
 ├── const.go           # Constants
 └── README.md          # This file
@@ -213,6 +224,92 @@ c := client.New(serverAddress, agentID, agentVersion, hostName, hostHostname)
 c = c.WithReconnectDelay(2 * time.Second)
 c = c.WithMaxReconnectDelay(2 * time.Minute)
 c = c.WithHeartbeatInterval(60 * time.Second)
+```
+
+## Server-Side API
+
+The server package provides the operator-side gRPC implementation for receiving agent connections:
+
+```go
+import (
+    "net"
+    "github.com/kastellan/kastellan/pkg/agentprotocol/server"
+)
+
+// Create server components
+sessionManager := server.NewSessionManager(nil)
+desiredStateProvider := server.NewDesiredStateProvider()
+statusProcessor := server.NewStatusProcessor()
+heartbeatProcessor := server.NewHeartbeatProcessor()
+
+// Create server
+server := server.NewServer(&server.ServerConfig{
+    SessionManager:       sessionManager,
+    DesiredStateProvider: desiredStateProvider,
+    StatusProcessor:      statusProcessor,
+    HeartbeatProcessor:   heartbeatProcessor,
+})
+
+// Start gRPC server
+lis, _ := net.Listen("tcp", ":443")
+server.ServeGRPC(lis)
+```
+
+### Session Management
+
+Sessions track active agent connections:
+
+```go
+session := server.NewSession(sessionID, hostName, agentID, agentVersion)
+sessionManager.CreateSession(session)
+
+// Update heartbeat
+session.UpdateHeartbeat(workloads, runtimeReady)
+```
+
+### Handshake
+
+Process agent hello messages:
+
+```go
+response, err := handshakeHandler.HandleAgentHello(agentHello, cert, false, "")
+if err != nil {
+    // Handle error
+}
+
+// Send response to agent
+stream.Send(response)
+```
+
+### Desired State Delivery
+
+Provide workload assignments to agents:
+
+```go
+workloads := map[string]*messages.PodmanPlay{
+    "uid-1": {
+        UID:        "uid-1",
+        Namespace:  "default",
+        Name:       "nginx",
+        Generation: 1,
+        Manifest:   "...",
+    },
+}
+desiredStateProvider.SetHostWorkloads("host-1", workloads)
+
+// Get desired state for host
+state, err := desiredStateProvider.GetDesiredState("host-1", 0)
+```
+
+### Status Processing
+
+Process workload status from agents:
+
+```go
+statusProcessor.ProcessResult(reconciliationResult)
+
+// Get status
+status, exists := statusProcessor.GetWorkloadStatus("default", "nginx")
 ```
 
 ## Testing

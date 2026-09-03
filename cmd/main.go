@@ -37,6 +37,7 @@ import (
 
 	kastellanuseurminddev1 "github.com/kastellan/kastellan/api/v1"
 	"github.com/kastellan/kastellan/internal/controller"
+	"github.com/kastellan/kastellan/pkg/agentprotocol/server"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -178,9 +179,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize server components
+	heartbeatProcessor := server.NewHeartbeatProcessor()
+	statusProcessor := server.NewStatusProcessor()
+
+	// Initialize controllers
 	if err := (&controller.ExternalHostReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		heartbeatServer: heartbeatProcessor,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "externalhost")
 		os.Exit(1)
@@ -200,12 +207,22 @@ func main() {
 		os.Exit(1)
 	}
 	if err := (&controller.PodmanPlayReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		statusProcessor: statusProcessor,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Failed to create controller", "controller", "podmanplay")
 		os.Exit(1)
 	}
+
+	// Initialize the agent protocol server
+	agentServer := server.NewServer(&server.ServerConfig{
+		HeartbeatProcessor: heartbeatProcessor,
+		StatusProcessor:    statusProcessor,
+	})
+
+	// TODO: Start the agent gRPC server in a goroutine
+	// This would be started on a separate port (e.g., :8080) for agent connections
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

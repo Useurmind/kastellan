@@ -228,7 +228,7 @@ func (h *StreamMessageHandler) SendAgentHello(ctx context.Context, agentID, agen
 // SendEnrollmentRequest sends an enrollment request
 func (h *StreamMessageHandler) SendEnrollmentRequest(ctx context.Context, token, agentID, agentVersion, hostName, hostHostname string) error {
 	msg := messages.EnrollmentRequest{
-		Type: messages.MessageTypeEnrollmentRequest,
+		Type:  messages.MessageTypeEnrollmentRequest,
 		Token: token,
 		Agent: struct {
 			ID      string `json:"id"`
