@@ -128,10 +128,10 @@ syntax = "proto3";
 
 package kastellan.agent.v1alpha1;
 
-option go_package = "github.com/example/kastellan/api/proto/agent/v1alpha1";
+option go_package = "github.com/kastellan/kastellan/api/proto/kastellan/agent/v1alpha1;agentv1alpha1";
 
-service AgentService {
-  rpc Connect(stream AgentMessage) returns (stream OperatorMessage);
+service AgentProtocol {
+  rpc Connect(stream ProtocolMessage) returns (stream ProtocolMessage);
 }
 ```
 
@@ -1475,9 +1475,10 @@ internal/
     └── mtls_test.go
 
 proto/
-└── agent/
-    └── v1alpha1/
-        └── agent.proto
+└── kastellan/
+    └── agent/
+        └── v1alpha1/
+            └── agent.proto
 ```
 
 ---

@@ -1,0 +1,219 @@
+syntax = "proto3";
+
+package kastellan.agent.v1alpha1;
+
+option go_package = "github.com/kastellan/kastellan/api/proto/kastellan/agent/v1alpha1;agentv1alpha1";
+
+// ProtocolVersion represents a version number.
+message ProtocolVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+// ResourceIdentity uniquely identifies a Kubernetes resource.
+message ResourceIdentity {
+  string api_version = 1;
+  string kind = 2;
+  string namespace = 3;
+  string name = 4;
+  string uid = 5;
+  int64 generation = 6;
+}
+
+// ErrorDetail provides detailed error information.
+message ErrorDetail {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+}
+
+// RuntimeInformation provides information about the runtime environment.
+message RuntimeInformation {
+  string name = 1;
+  string version = 2;
+  repeated string capabilities = 3;
+}
+
+// RuntimeHealth provides runtime health status.
+message RuntimeHealth {
+  bool available = 1;
+  string message = 2;
+}
+
+// ContainerInfo represents information about a container.
+message ContainerInfo {
+  string name = 1;
+  string id = 2;
+  string state = 3;
+}
+
+// WorkloadResult represents the result for a single workload.
+message WorkloadResult {
+  // Workload identification
+  ResourceIdentity identity = 1;
+
+  // Current phase
+  string phase = 2;
+
+  // Error details if phase is Failed
+  ErrorDetail error = 3;
+
+  // Manifest digest
+  string manifest_digest = 4;
+
+  // Runtime information
+  RuntimeInformation runtime = 5;
+  
+  repeated ContainerInfo containers = 6;
+}
+
+// LocalWorkload represents a workload assigned to the agent.
+message LocalWorkload {
+  ResourceIdentity identity = 1;
+  string manifest = 2;
+  string manifest_digest = 3;
+}
+
+// PodmanPlayAssignment represents a Podman play workload assignment.
+message PodmanPlayAssignment {
+  ResourceIdentity identity = 1;
+  string manifest = 2;
+  string manifest_digest = 3;
+  string update_strategy = 4;
+}
+
+// AgentHello is the initial connection message sent by the agent.
+message AgentHello {
+  string agent_id = 1;
+  string host_name = 2;
+  string agent_version = 3;
+  repeated ProtocolVersion supported_protocols = 4;
+  RuntimeInformation runtime = 5;
+  string last_session_id = 6;
+  uint64 last_received_revision = 7;
+  uint64 last_applied_revision = 8;
+}
+
+// OperatorHello is the server's response to AgentHello.
+message OperatorHello {
+  string session_id = 1;
+  ProtocolVersion selected_protocol = 2;
+  uint32 heartbeat_interval_seconds = 3;
+  uint32 state_report_interval_seconds = 4;
+  int64 server_time_unix = 5;
+}
+
+// DesiredState is sent by the operator to deliver workload assignments.
+message DesiredState {
+  string host = 1;
+  uint64 revision = 2;
+  repeated PodmanPlayAssignment podman_plays = 3;
+}
+
+// DesiredStateUpdate is sent by the operator for incremental updates.
+message DesiredStateUpdate {
+  string session_id = 1;
+  string host = 2;
+  uint64 revision = 3;
+  repeated PodmanPlayAssignment additions = 4;
+  repeated string deletions = 5;
+}
+
+// Heartbeat is a periodic status update from the agent.
+message Heartbeat {
+  string session_id = 1;
+  RuntimeHealth runtime = 2;
+  WorkloadStatus workloads = 3;
+  string host_name = 4;
+}
+
+// HostInventory is sent by the agent to report host capabilities.
+message HostInventory {
+  string session_id = 1;
+  HostInfo host = 2;
+  PodmanInfo podman = 3;
+  repeated string capabilities = 4;
+}
+
+// ReconcileResult reports the result of workload reconciliation.
+message ReconcileResult {
+  string session_id = 1;
+  string host = 2;
+  uint64 revision = 3;
+  repeated WorkloadResult workloads = 4;
+}
+
+// ReconcileRequest is sent by the operator to request reconciliation.
+message ReconcileRequest {
+  string session_id = 1;
+  string host = 2;
+  uint64 revision = 3;
+}
+
+// WorkloadStatus reports the status of a single workload.
+message WorkloadStatus {
+  string session_id = 1;
+  ResourceIdentity identity = 2;
+  string phase = 3;
+  RuntimeInformation runtime = 4;
+}
+
+// Protocol service definition for bidirectional streaming.
+service AgentProtocol {
+  // Connect establishes a bidirectional stream for protocol messages.
+  rpc Connect(stream ProtocolMessage) returns (stream ProtocolMessage);
+}
+
+// ProtocolMessage is a wrapper for all protocol messages using oneof.
+message ProtocolMessage {
+  oneof payload {
+    // Agent messages
+    AgentHello agent_hello = 1;
+    string enrollment_request = 2;
+    Heartbeat heartbeat = 3;
+    HostInventory host_inventory = 4;
+    ReconcileResult reconcile_result = 5;
+    WorkloadStatus workload_status = 6;
+    string certificate_rotation_request = 7;
+    
+    // Operator messages
+    OperatorHello operator_hello = 8;
+    string enrollment_response = 9;
+    DesiredState desired_state = 10;
+    DesiredStateUpdate desired_state_update = 11;
+    ReconcileRequest reconcile_request = 12;
+    string certificate_rotation_response = 13;
+    string connection_close = 14;
+    
+    // Common types
+    ProtocolVersion protocol_version = 15;
+    ResourceIdentity resource_identity = 16;
+    ErrorDetail error_detail = 17;
+    RuntimeInformation runtime_information = 18;
+    ContainerInfo container_info = 19;
+    WorkloadResult workload_result = 20;
+    LocalWorkload local_workload = 21;
+    PodmanPlayAssignment podman_play_assignment = 22;
+    RuntimeHealth runtime_health = 23;
+    HostInfo host_info = 24;
+    PodmanInfo podman_info = 25;
+  }
+}
+
+// HostInfo provides host system information.
+message HostInfo {
+  string name = 1;
+  string hostname = 2;
+  string os = 3;
+  string kernel = 4;
+  string cpu = 5;
+  string memory = 6;
+  string storage = 7;
+}
+
+// PodmanInfo provides Podman runtime information.
+message PodmanInfo {
+  string version = 1;
+  bool rootful = 2;
+  string api_version = 3;
+}

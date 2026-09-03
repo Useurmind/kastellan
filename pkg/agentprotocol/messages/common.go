@@ -3,6 +3,8 @@ package messages
 
 import (
 	"fmt"
+
+	agentv1alpha1 "github.com/kastellan/kastellan/api/proto/kastellan/agent/v1alpha1"
 )
 
 // Capability constants
@@ -140,4 +142,95 @@ func (p *PodmanPlay) Validate() error {
 		return &ProtocolError{Code: "missing_manifest", Message: "manifest is required"}
 	}
 	return nil
+}
+
+// ToProto converts ContainerInfo to proto ContainerInfo.
+func (c *ContainerInfo) ToProto() *agentv1alpha1.ContainerInfo {
+	return &agentv1alpha1.ContainerInfo{
+		Name:  c.Name,
+		Id:    c.ID,
+		State: c.State,
+	}
+}
+
+// ContainerInfoFromProto converts proto ContainerInfo to ContainerInfo.
+func ContainerInfoFromProto(p *agentv1alpha1.ContainerInfo) *ContainerInfo {
+	if p == nil {
+		return nil
+	}
+	return &ContainerInfo{
+		Name:  p.Name,
+		ID:    p.Id,
+		State: p.State,
+	}
+}
+
+// ToProto converts WorkloadResult to proto WorkloadResult.
+func (w *WorkloadResult) ToProto() *agentv1alpha1.WorkloadResult {
+	protoContainers := make([]*agentv1alpha1.ContainerInfo, len(w.Runtime.Containers))
+	for i, c := range w.Runtime.Containers {
+		protoContainers[i] = c.ToProto()
+	}
+	return &agentv1alpha1.WorkloadResult{
+		Identity: &agentv1alpha1.ResourceIdentity{
+			ApiVersion: "",
+			Kind:       "",
+			Namespace:  w.Namespace,
+			Name:       w.Name,
+			Uid:        w.UID,
+			Generation: w.Generation,
+		},
+		Phase:          w.Phase,
+		Error:          nil,
+		ManifestDigest: w.ManifestDigest,
+		Containers:     protoContainers,
+	}
+}
+
+// WorkloadResultFromProto converts proto WorkloadResult to WorkloadResult.
+func WorkloadResultFromProto(p *agentv1alpha1.WorkloadResult) *WorkloadResult {
+	if p == nil {
+		return nil
+	}
+	identity := p.GetIdentity()
+	return &WorkloadResult{
+		UID:        identity.GetUid(),
+		Namespace:  identity.GetNamespace(),
+		Name:       identity.GetName(),
+		Generation: identity.GetGeneration(),
+		Phase:      p.GetPhase(),
+		ManifestDigest: p.GetManifestDigest(),
+	}
+}
+
+// ToProto converts PodmanPlay to proto PodmanPlayAssignment.
+func (p *PodmanPlay) ToProto() *agentv1alpha1.PodmanPlayAssignment {
+	return &agentv1alpha1.PodmanPlayAssignment{
+		Identity: &agentv1alpha1.ResourceIdentity{
+			ApiVersion: "",
+			Kind:       "",
+			Namespace:  p.Namespace,
+			Name:       p.Name,
+			Uid:        p.UID,
+			Generation: p.Generation,
+		},
+		Manifest:       p.Manifest,
+		ManifestDigest: "",
+		UpdateStrategy: "",
+	}
+}
+
+// PodmanPlayFromProto converts proto PodmanPlayAssignment to PodmanPlay.
+func PodmanPlayFromProto(p *agentv1alpha1.PodmanPlayAssignment) *PodmanPlay {
+	if p == nil {
+		return nil
+	}
+	identity := p.GetIdentity()
+	return &PodmanPlay{
+		UID:        identity.GetUid(),
+		Namespace:  identity.GetNamespace(),
+		Name:       identity.GetName(),
+		Generation: identity.GetGeneration(),
+		Manifest:   p.GetManifest(),
+	}
 }

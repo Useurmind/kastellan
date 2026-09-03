@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     ca-certificates \
     podman \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go tools
@@ -27,6 +28,11 @@ RUN curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(
 RUN curl -L -o controller-gen https://github.com/kubernetes-sigs/controller-tools/releases/download/v0.21.0/controller-gen-linux-amd64 && \
     chmod +x controller-gen && \
     mv controller-gen /usr/local/bin/
+
+# Install protobuf compiler
+RUN curl -L -o protobuf.zip https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protoc-36.1-linux-x86_64.zip && \
+    unzip protobuf.zip -d /usr/local && \
+    rm protobuf.zip
 
 # Runtime stage
 FROM ubuntu:24.04
@@ -53,6 +59,11 @@ COPY --from=builder /go/bin/goimports /usr/local/bin/goimports
 COPY --from=builder /go/bin/golint /usr/local/bin/golint
 COPY --from=builder /go/bin/golangci-lint /usr/local/bin/golangci-lint
 COPY --from=builder /go/bin/deadcode /usr/local/bin/deadcode
+
+# Copy protobuf compiler
+COPY --from=builder /usr/local/bin/protoc /usr/local/bin/protoc
+COPY --from=builder /usr/local/include /usr/local/include
+COPY --from=builder /usr/local/lib /usr/local/lib
 
 RUN curl -fsSL https://go.dev/dl/go1.27.0.linux-amd64.tar.gz | tar -C /usr/local -xz
 

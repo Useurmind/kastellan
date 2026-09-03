@@ -3,6 +3,8 @@ package messages
 
 import (
 	"time"
+
+	agentv1alpha1 "github.com/kastellan/kastellan/api/proto/kastellan/agent/v1alpha1"
 )
 
 // OperatorHello is the server's response to AgentHello.
@@ -211,4 +213,111 @@ func (d *DesiredStateUpdate) Validate() error {
 		return &ProtocolError{Code: "missing_host", Message: "host name is required"}
 	}
 	return nil
+}
+
+// ToProto converts OperatorHello to proto OperatorHello.
+func (o *OperatorHello) ToProto() *agentv1alpha1.OperatorHello {
+	return &agentv1alpha1.OperatorHello{
+		SessionId:                 o.Session.ID,
+		SelectedProtocol:          &agentv1alpha1.ProtocolVersion{},
+		HeartbeatIntervalSeconds:  0,
+		StateReportIntervalSeconds: 0,
+		ServerTimeUnix:            0,
+	}
+}
+
+// OperatorHelloFromProto converts proto OperatorHello to OperatorHello.
+func OperatorHelloFromProto(p *agentv1alpha1.OperatorHello) *OperatorHello {
+	if p == nil {
+		return nil
+	}
+	return &OperatorHello{
+		Type: MessageTypeOperatorHello,
+	}
+}
+
+// ToProto converts DesiredState to proto DesiredState.
+func (d *DesiredState) ToProto() *agentv1alpha1.DesiredState {
+	protoPodmanPlays := make([]*agentv1alpha1.PodmanPlayAssignment, len(d.PodmanPlays))
+	for i, p := range d.PodmanPlays {
+		protoPodmanPlays[i] = p.ToProto()
+	}
+	return &agentv1alpha1.DesiredState{
+		Host:        d.Host,
+		Revision:    uint64(d.Revision),
+		PodmanPlays: protoPodmanPlays,
+	}
+}
+
+// DesiredStateFromProto converts proto DesiredState to DesiredState.
+func DesiredStateFromProto(p *agentv1alpha1.DesiredState) *DesiredState {
+	if p == nil {
+		return nil
+	}
+	podmanPlays := make([]PodmanPlay, len(p.GetPodmanPlays()))
+	for i, pp := range p.GetPodmanPlays() {
+		podmanPlays[i] = *PodmanPlayFromProto(pp)
+	}
+	return &DesiredState{
+		Type:      MessageTypeDesiredState,
+		Host:      p.GetHost(),
+		Revision:  int64(p.GetRevision()),
+		PodmanPlays: podmanPlays,
+	}
+}
+
+// ToProto converts ReconcileRequest to proto ReconcileRequest.
+func (r *ReconcileRequest) ToProto() *agentv1alpha1.ReconcileRequest {
+	return &agentv1alpha1.ReconcileRequest{
+		SessionId: r.SessionID,
+		Host:      r.Host,
+		Revision:  uint64(r.Revision),
+	}
+}
+
+// ReconcileRequestFromProto converts proto ReconcileRequest to ReconcileRequest.
+func ReconcileRequestFromProto(p *agentv1alpha1.ReconcileRequest) *ReconcileRequest {
+	if p == nil {
+		return nil
+	}
+	return &ReconcileRequest{
+		Type:      MessageTypeReconcileRequest,
+		SessionID: p.GetSessionId(),
+		Host:      p.GetHost(),
+		Revision:  int64(p.GetRevision()),
+	}
+}
+
+// ToProto converts DesiredStateUpdate to proto DesiredStateUpdate.
+func (d *DesiredStateUpdate) ToProto() *agentv1alpha1.DesiredStateUpdate {
+	protoAdditions := make([]*agentv1alpha1.PodmanPlayAssignment, len(d.Additions))
+	for i, a := range d.Additions {
+		protoAdditions[i] = a.ToProto()
+	}
+	return &agentv1alpha1.DesiredStateUpdate{
+		SessionId:  d.SessionID,
+		Host:       d.Host,
+		Revision:   uint64(d.Revision),
+		Additions:  protoAdditions,
+		Deletions:  d.Deletions,
+	}
+}
+
+// DesiredStateUpdateFromProto converts proto DesiredStateUpdate to DesiredStateUpdate.
+func DesiredStateUpdateFromProto(p *agentv1alpha1.DesiredStateUpdate) *DesiredStateUpdate {
+	if p == nil {
+		return nil
+	}
+	additions := make([]PodmanPlay, len(p.GetAdditions()))
+	for i, a := range p.GetAdditions() {
+		additions[i] = *PodmanPlayFromProto(a)
+	}
+	return &DesiredStateUpdate{
+		Type:      MessageTypeDesiredStateUpdate,
+		SessionID: p.GetSessionId(),
+		Host:      p.GetHost(),
+		Revision:  int64(p.GetRevision()),
+		Additions: additions,
+		Deletions: p.GetDeletions(),
+	}
 }

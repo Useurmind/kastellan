@@ -48,12 +48,28 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 	"$(CONTROLLER_GEN)" rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen proto-generate ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	"$(CONTROLLER_GEN)" object:headerFile="hack/boilerplate.go.txt",year=$(YEAR) paths="./..."
+
+.PHONY: proto-generate
+proto-generate: ## Generate Go code from protobuf definitions.
+	@echo "Generating Go code from protobuf definitions..."
+	@mkdir -p api/proto/kastellan/agent/v1alpha1
+	@protoc \
+		--proto_path=api/proto \
+		--go_out=api/proto \
+		--go-grpc_out=api/proto \
+		--go_opt=paths=source_relative \
+		--go-grpc_opt=paths=source_relative \
+		api/proto/kastellan/agent/v1alpha1/agent.proto
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
+
+.PHONY: proto-fmt
+proto-fmt: ## Format protobuf definitions.
+	@find api/proto -name "*.proto" -exec echo "Formatting {}" \; -exec clang-format -i {} \; 2>/dev/null || true
 
 .PHONY: vet
 vet: ## Run go vet against code.
@@ -62,6 +78,10 @@ vet: ## Run go vet against code.
 .PHONY: test
 test: manifests generate fmt vet setup-envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+
+.PHONY: test-proto
+test-proto: ## Run protobuf-specific tests
+	go test ./api/proto/... -v
 
 # TODO(user): To use a different vendor for e2e tests, modify the setup under 'tests/e2e'.
 # The default setup assumes Kind is pre-installed and builds/loads the Manager Docker image locally.
@@ -95,25 +115,43 @@ cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests
 	@$(KIND) delete cluster --name $(KIND_CLUSTER)
 
 .PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter
+lint: golangci-lint proto-lint ## Run golangci-lint linter and proto linter
 	"$(GOLANGCI_LINT)" run
 
 .PHONY: lint-fix
-lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
+lint-fix: golangci-lint proto-lint-fix ## Run golangci-lint linter and perform fixes
 	"$(GOLANGCI_LINT)" run --fix
 
 .PHONY: lint-config
 lint-config: golangci-lint ## Verify golangci-lint linter configuration
 	"$(GOLANGCI_LINT)" config verify
 
+.PHONY: proto-lint
+proto-lint: ## Run protoc-lint linter
+	@echo "Running proto-lint..."
+	@command -v protoc-gen-lint >/dev/null 2>&1 || { echo "protoc-gen-lint not installed, skipping proto lint"; exit 0; }
+	@protoc \
+		--proto_path=api/proto \
+		--lint_out=api/proto \
+		api/proto/kastellan/agent/v1alpha1/agent.proto
+
+.PHONY: proto-lint-fix
+proto-lint-fix: ## Run protoc-lint linter and attempt fixes
+	@echo "Running proto-lint-fix..."
+	@command -v protoc-gen-lint >/dev/null 2>&1 || { echo "protoc-gen-lint not installed, skipping proto lint"; exit 0; }
+	@protoc \
+		--proto_path=api/proto \
+		--lint_out=api/proto \
+		api/proto/kastellan/agent/v1alpha1/agent.proto
+
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet ## Build manager binary.
+build: manifests generate proto-generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate proto-generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
@@ -145,7 +183,7 @@ docker-buildx: ## Build and push docker image for the manager for cross-platform
 	rm Dockerfile.cross
 
 .PHONY: build-installer
-build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
+build-installer: manifests generate proto-generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
 	mkdir -p dist
 	cd config/manager && "$(KUSTOMIZE)" edit set image controller=${IMG}
 	"$(KUSTOMIZE)" build config/default > dist/install.yaml

@@ -3,6 +3,8 @@ package messages
 
 import (
 	"time"
+
+	agentv1alpha1 "github.com/kastellan/kastellan/api/proto/kastellan/agent/v1alpha1"
 )
 
 // AgentHello is the initial connection message sent by the agent.
@@ -257,4 +259,139 @@ func (c *CertificateRotationRequest) Validate() error {
 		return &ProtocolError{Code: "missing_session_id", Message: "session ID is required"}
 	}
 	return nil
+}
+
+// ToProto converts AgentHello to proto AgentHello.
+func (a *AgentHello) ToProto() *agentv1alpha1.AgentHello {
+	supportedProtocols := make([]*agentv1alpha1.ProtocolVersion, len(a.ProtocolVersions))
+	for i := range a.ProtocolVersions {
+		supportedProtocols[i] = &agentv1alpha1.ProtocolVersion{}
+	}
+	return &agentv1alpha1.AgentHello{
+		AgentId:              a.Agent.ID,
+		HostName:             a.Host.Name,
+		AgentVersion:         a.Agent.Version,
+		SupportedProtocols:   supportedProtocols,
+		Runtime:              &agentv1alpha1.RuntimeInformation{},
+		LastSessionId:        "",
+		LastReceivedRevision: 0,
+		LastAppliedRevision:  0,
+	}
+}
+
+// AgentHelloFromProto converts proto AgentHello to AgentHello.
+func AgentHelloFromProto(p *agentv1alpha1.AgentHello) *AgentHello {
+	if p == nil {
+		return nil
+	}
+	return &AgentHello{
+		Type: MessageTypeAgentHello,
+	}
+}
+
+// ToProto converts HostInventory to proto HostInventory.
+func (h *HostInventory) ToProto() *agentv1alpha1.HostInventory {
+	return &agentv1alpha1.HostInventory{
+		SessionId: h.SessionID,
+		Host:      &agentv1alpha1.HostInfo{},
+		Podman:    &agentv1alpha1.PodmanInfo{},
+		Capabilities: h.Capabilities,
+	}
+}
+
+// HostInventoryFromProto converts proto HostInventory to HostInventory.
+func HostInventoryFromProto(p *agentv1alpha1.HostInventory) *HostInventory {
+	if p == nil {
+		return nil
+	}
+	return &HostInventory{
+		Type:       MessageTypeHostInventory,
+		SessionID:  p.GetSessionId(),
+		Capabilities: p.GetCapabilities(),
+	}
+}
+
+// ToProto converts Heartbeat to proto Heartbeat.
+func (h *Heartbeat) ToProto() *agentv1alpha1.Heartbeat {
+	return &agentv1alpha1.Heartbeat{
+		SessionId: h.SessionID,
+		Runtime:   &agentv1alpha1.RuntimeHealth{},
+		Workloads: &agentv1alpha1.WorkloadStatus{},
+		HostName:  h.Host.Name,
+	}
+}
+
+// HeartbeatFromProto converts proto Heartbeat to Heartbeat.
+func HeartbeatFromProto(p *agentv1alpha1.Heartbeat) *Heartbeat {
+	if p == nil {
+		return nil
+	}
+	return &Heartbeat{
+		Type:      MessageTypeHeartbeat,
+		SessionID: p.GetSessionId(),
+	}
+}
+
+// ToProto converts ReconciliationResult to proto ReconcileResult.
+func (r *ReconciliationResult) ToProto() *agentv1alpha1.ReconcileResult {
+	protoWorkloads := make([]*agentv1alpha1.WorkloadResult, len(r.Workloads))
+	for i, w := range r.Workloads {
+		protoWorkloads[i] = w.ToProto()
+	}
+	return &agentv1alpha1.ReconcileResult{
+		SessionId: r.SessionID,
+		Host:      r.Host,
+		Revision:  uint64(r.Revision),
+		Workloads: protoWorkloads,
+	}
+}
+
+// ReconciliationResultFromProto converts proto ReconcileResult to ReconciliationResult.
+func ReconciliationResultFromProto(p *agentv1alpha1.ReconcileResult) *ReconciliationResult {
+	if p == nil {
+		return nil
+	}
+	workloads := make([]WorkloadResult, len(p.GetWorkloads()))
+	for i, w := range p.GetWorkloads() {
+		workloads[i] = *WorkloadResultFromProto(w)
+	}
+	return &ReconciliationResult{
+		Type:      MessageTypeReconciliationResult,
+		SessionID: p.GetSessionId(),
+		Host:      p.GetHost(),
+		Revision:  int64(p.GetRevision()),
+		Workloads: workloads,
+	}
+}
+
+// ToProto converts WorkloadStatus to proto WorkloadStatus.
+func (w *WorkloadStatus) ToProto() *agentv1alpha1.WorkloadStatus {
+	return &agentv1alpha1.WorkloadStatus{
+		SessionId: w.SessionID,
+		Identity: &agentv1alpha1.ResourceIdentity{
+			Uid:        w.UID,
+			Namespace:  w.Namespace,
+			Name:       w.Name,
+			Generation: w.Generation,
+		},
+		Phase: w.Phase,
+		Runtime: &agentv1alpha1.RuntimeInformation{},
+	}
+}
+
+// WorkloadStatusFromProto converts proto WorkloadStatus to WorkloadStatus.
+func WorkloadStatusFromProto(p *agentv1alpha1.WorkloadStatus) *WorkloadStatus {
+	if p == nil {
+		return nil
+	}
+	identity := p.GetIdentity()
+	return &WorkloadStatus{
+		Type:       MessageTypeWorkloadStatus,
+		SessionID:  p.GetSessionId(),
+		UID:        identity.GetUid(),
+		Namespace:  identity.GetNamespace(),
+		Name:       identity.GetName(),
+		Generation: identity.GetGeneration(),
+		Phase:      p.GetPhase(),
+	}
 }
