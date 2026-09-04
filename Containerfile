@@ -31,6 +31,20 @@ RUN curl -L -o controller-gen https://github.com/kubernetes-sigs/controller-tool
     chmod +x controller-gen && \
     mv controller-gen /usr/local/bin/
 
+# Install kubectl latest
+RUN curl -L -o /usr/local/bin/kubectl https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+
+# Install kind latest
+RUN curl -L -o /usr/local/bin/kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64 && \
+    chmod +x /usr/local/bin/kind
+
+# Install k9s latest
+RUN curl -L -o /tmp/k9s.tar.gz https://github.com/derailed/k9s/releases/latest/download/k9s_linux_amd64.tar.gz && \
+    tar -C /tmp -xzf /tmp/k9s.tar.gz && \
+    mv /tmp/k9s /usr/local/bin/k9s && \
+    rm /tmp/k9s.tar.gz
+
 # Install protobuf compiler
 RUN curl -L -o protobuf.zip https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protoc-36.1-linux-x86_64.zip && \
     unzip protobuf.zip -d /usr/local && \
@@ -38,6 +52,8 @@ RUN curl -L -o protobuf.zip https://github.com/protocolbuffers/protobuf/releases
 
 # Runtime stage
 FROM ubuntu:24.04
+
+ENV PATH="/usr/local/bin:${PATH}"
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -54,6 +70,11 @@ COPY --from=builder /usr/local/bin/controller-gen /usr/local/bin/controller-gen
 
 # Copy kubebuilder
 COPY --from=builder /usr/local/bin/kubebuilder /usr/local/bin/kubebuilder
+
+# Copy k8s tools
+COPY --from=builder /usr/local/bin/kubectl /usr/local/bin/kubectl
+COPY --from=builder /usr/local/bin/kind /usr/local/bin/kind
+COPY --from=builder /usr/local/bin/k9s /usr/local/bin/k9s
 
 # Copy go bin tools
 COPY --from=builder /go/bin/dlv /usr/local/bin/dlv
